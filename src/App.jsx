@@ -11,6 +11,8 @@ import Footer from "./components/Footer";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import AdminVehicles from "./pages/AdminVehicles.jsx";
 import AdminBookings from "./pages/AdminBookings.jsx";
+import PaymentCallback from "./pages/PaymentCallback.jsx";
+
 
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
@@ -63,6 +65,16 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/payment/callback"
+          element={
+            <ProtectedRoute>
+              <PaymentCallback />
+            </ProtectedRoute>
+          }
+        />
+        
       </Routes>
       <Footer />
     </BrowserRouter>

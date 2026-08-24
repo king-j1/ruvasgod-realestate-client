@@ -8,6 +8,7 @@ function MyBookings() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [payingId, setPayingId] = useState(null);
 
   const fetchBookings = async () => {
     try {
@@ -19,8 +20,7 @@ function MyBookings() {
       setBookings(response.data.bookings || []);
     } catch (error) {
       setError(
-        error.response?.data?.message ||
-          "Failed to load your bookings."
+        error.response?.data?.message || "Failed to load your bookings.",
       );
     } finally {
       setLoading(false);
@@ -33,7 +33,7 @@ function MyBookings() {
 
   const cancelBooking = async (bookingId) => {
     const confirmed = window.confirm(
-      "Are you sure you want to cancel this booking?"
+      "Are you sure you want to cancel this booking?",
     );
 
     if (!confirmed) return;
@@ -41,12 +41,38 @@ function MyBookings() {
     try {
       await api.put(`/bookings/${bookingId}/cancel`);
 
-      fetchBookings();
+      await fetchBookings();
     } catch (error) {
-      alert(
+      alert(error.response?.data?.message || "Failed to cancel booking.");
+    }
+  };
+
+  const payForBooking = async (bookingId) => {
+    try {
+      setPayingId(bookingId);
+      setError("");
+
+      const response = await api.post("/payments/initialize", {
+        bookingId,
+        callback_url: `${window.location.origin}/payment/callback`,
+      });
+      const authorizationUrl = response.data?.payment?.authorizationUrl;
+
+      if (!authorizationUrl) {
+        throw new Error("Payment could not be initialized.");
+      }
+
+      window.location.href = authorizationUrl;
+    } catch (error) {
+      console.error("Payment initialization error:", error);
+
+      setError(
         error.response?.data?.message ||
-          "Failed to cancel booking."
+          error.message ||
+          "Failed to initialize payment.",
       );
+
+      setPayingId(null);
     }
   };
 
@@ -62,9 +88,7 @@ function MyBookings() {
     <div className="min-h-screen bg-slate-100 px-6 py-10">
       <div className="mx-auto max-w-6xl">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-900">
-            My Bookings
-          </h1>
+          <h1 className="text-4xl font-bold text-slate-900">My Bookings</h1>
 
           <p className="mt-2 text-slate-500">
             View and manage your vehicle rentals.
@@ -89,7 +113,7 @@ function MyBookings() {
 
             <button
               onClick={() => navigate("/vehicles")}
-              className="mt-6 rounded-lg bg-slate-900 px-6 py-3 font-semibold text-white"
+              className="mt-6 rounded-lg bg-slate-900 px-6 py-3 font-semibold text-white hover:bg-slate-800"
             >
               Browse Vehicles
             </button>
@@ -103,6 +127,10 @@ function MyBookings() {
                 vehicle?.images?.length > 0
                   ? vehicle.images[0]
                   : "https://via.placeholder.com/600x400?text=Ruvasgod+Auto";
+
+              const isPayable =
+                booking.paymentStatus === "unpaid" &&
+                booking.status === "pending";
 
               return (
                 <div
@@ -133,12 +161,14 @@ function MyBookings() {
                             booking.status === "completed"
                               ? "bg-green-100 text-green-700"
                               : booking.status === "cancelled"
-                              ? "bg-red-100 text-red-700"
-                              : booking.status === "overdue"
-                              ? "bg-orange-100 text-orange-700"
-                              : booking.status === "active"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-yellow-100 text-yellow-700"
+                                ? "bg-red-100 text-red-700"
+                                : booking.status === "overdue"
+                                  ? "bg-orange-100 text-orange-700"
+                                  : booking.status === "active"
+                                    ? "bg-blue-100 text-blue-700"
+                                    : booking.status === "confirmed"
+                                      ? "bg-green-100 text-green-700"
+                                      : "bg-yellow-100 text-yellow-700"
                           }`}
                         >
                           {booking.status}
@@ -147,54 +177,49 @@ function MyBookings() {
 
                       <div className="mt-6 grid gap-4 sm:grid-cols-3">
                         <div>
-                          <p className="text-sm text-slate-500">
-                            Start Date
-                          </p>
+                          <p className="text-sm text-slate-500">Start Date</p>
 
                           <p className="font-semibold">
-                            {new Date(
-                              booking.startDate
-                            ).toLocaleDateString()}
+                            {new Date(booking.startDate).toLocaleDateString()}
                           </p>
                         </div>
 
                         <div>
-                          <p className="text-sm text-slate-500">
-                            End Date
-                          </p>
+                          <p className="text-sm text-slate-500">End Date</p>
 
                           <p className="font-semibold">
-                            {new Date(
-                              booking.endDate
-                            ).toLocaleDateString()}
+                            {new Date(booking.endDate).toLocaleDateString()}
                           </p>
                         </div>
 
                         <div>
-                          <p className="text-sm text-slate-500">
-                            Total
-                          </p>
+                          <p className="text-sm text-slate-500">Total</p>
 
-                          <p className="font-semibold">
-                            ${booking.totalPrice}
-                          </p>
+                          <p className="font-semibold">${booking.totalPrice}</p>
                         </div>
                       </div>
 
                       <div className="mt-6 flex flex-wrap items-center gap-3">
                         <span className="rounded-lg bg-slate-100 px-4 py-2 text-sm">
-                          Payment:{" "}
-                          <strong>{booking.paymentStatus}</strong>
+                          Payment: <strong>{booking.paymentStatus}</strong>
                         </span>
 
-                        {booking.status !== "active" &&
-                          booking.status !== "completed" &&
-                          booking.status !== "cancelled" &&
-                          booking.status !== "overdue" && (
+                        {isPayable && (
+                          <button
+                            onClick={() => payForBooking(booking._id)}
+                            disabled={payingId === booking._id}
+                            className="rounded-lg bg-green-600 px-5 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {payingId === booking._id
+                              ? "Connecting to Paystack..."
+                              : "Pay Now"}
+                          </button>
+                        )}
+
+                        {booking.status === "pending" &&
+                          booking.paymentStatus !== "paid" && (
                             <button
-                              onClick={() =>
-                                cancelBooking(booking._id)
-                              }
+                              onClick={() => cancelBooking(booking._id)}
                               className="rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
                             >
                               Cancel Booking

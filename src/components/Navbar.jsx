@@ -11,29 +11,40 @@ function Navbar() {
   };
 
   return (
-    <nav className="border-b border-slate-200 bg-white">
+    <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        
         {/* Logo */}
         <Link
           to="/"
-          className="text-xl font-bold text-slate-900"
+          className="flex items-center gap-3"
         >
-          RUVASGOD AUTO
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-sm font-black text-white">
+            R
+          </div>
+
+          <div>
+            <p className="text-lg font-black tracking-tight text-slate-900">
+              RUVASGOD
+            </p>
+
+            <p className="text-[10px] font-semibold tracking-[0.25em] text-slate-500">
+              AUTO
+            </p>
+          </div>
         </Link>
 
         {/* Navigation */}
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-6">
           <Link
             to="/"
-            className="text-sm font-medium text-slate-600 hover:text-slate-900"
+            className="text-sm font-medium text-slate-600 transition hover:text-slate-950"
           >
             Home
           </Link>
 
           <Link
             to="/vehicles"
-            className="text-sm font-medium text-slate-600 hover:text-slate-900"
+            className="text-sm font-medium text-slate-600 transition hover:text-slate-950"
           >
             Vehicles
           </Link>
@@ -42,7 +53,7 @@ function Navbar() {
           {user && user.role !== "admin" && (
             <Link
               to="/my-bookings"
-              className="text-sm font-medium text-slate-600 hover:text-slate-900"
+              className="text-sm font-medium text-slate-600 transition hover:text-slate-950"
             >
               My Bookings
             </Link>
@@ -53,21 +64,21 @@ function Navbar() {
             <>
               <Link
                 to="/admin"
-                className="text-sm font-medium text-slate-600 hover:text-slate-900"
+                className="text-sm font-medium text-slate-600 transition hover:text-slate-950"
               >
                 Dashboard
               </Link>
 
               <Link
                 to="/admin/vehicles"
-                className="text-sm font-medium text-slate-600 hover:text-slate-900"
+                className="text-sm font-medium text-slate-600 transition hover:text-slate-950"
               >
-                Manage Vehicles
+                Vehicles
               </Link>
 
               <Link
                 to="/admin/bookings"
-                className="text-sm font-medium text-slate-600 hover:text-slate-900"
+                className="text-sm font-medium text-slate-600 transition hover:text-slate-950"
               >
                 Bookings
               </Link>
@@ -79,14 +90,14 @@ function Navbar() {
             <>
               <Link
                 to="/login"
-                className="text-sm font-semibold text-slate-700 hover:text-slate-950"
+                className="text-sm font-semibold text-slate-700 transition hover:text-slate-950"
               >
                 Log In
               </Link>
 
               <Link
                 to="/register"
-                className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+                className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
               >
                 Sign Up
               </Link>
@@ -95,12 +106,24 @@ function Navbar() {
 
           {/* Logged in */}
           {user && (
-            <button
-              onClick={handleLogout}
-              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
-            >
-              Logout
-            </button>
+            <div className="flex items-center gap-3">
+              <div className="hidden text-right sm:block">
+                <p className="text-xs font-semibold text-slate-900">
+                  {user.name}
+                </p>
+
+                <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                  {user.role}
+                </p>
+              </div>
+
+              <button
+                onClick={handleLogout}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+              >
+                Logout
+              </button>
+            </div>
           )}
         </div>
       </div>

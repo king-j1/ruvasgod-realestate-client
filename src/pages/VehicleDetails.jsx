@@ -31,6 +31,10 @@ function VehicleDetails() {
   const handleBooking = async (e) => {
     e.preventDefault();
 
+    if (booking) {
+      return;
+    }
+
     if (!startDate || !endDate) {
       setMessage("Please select both dates.");
       return;
