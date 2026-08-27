@@ -51,12 +51,21 @@ function Navbar() {
 
           {/* Customer navigation */}
           {user && user.role !== "admin" && (
-            <Link
-              to="/my-bookings"
-              className="text-sm font-medium text-slate-600 transition hover:text-slate-950"
-            >
-              My Bookings
-            </Link>
+            <>
+              <Link
+                to="/my-bookings"
+                className="text-sm font-medium text-slate-600 transition hover:text-slate-950"
+              >
+                My Bookings
+              </Link>
+
+              <Link
+                to="/my-purchases"
+                className="text-sm font-medium text-slate-600 transition hover:text-slate-950"
+              >
+                My Purchases
+              </Link>
+            </>
           )}
 
           {/* Admin navigation */}
