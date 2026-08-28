@@ -38,7 +38,7 @@ function Login() {
     } catch (error) {
       setError(
         error.response?.data?.message ||
-          "Login failed. Please try again."
+          "This account has been deactivated. Please contact an administrator."
       );
     } finally {
       setLoading(false);
