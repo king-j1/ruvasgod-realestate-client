@@ -1,17 +1,27 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import api from "../api/axios";
+import VehicleCard from "../components/VehicleCard";
 
 function VehicleDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [vehicle, setVehicle] = useState(null);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(
+    searchParams.get("startDate") || ""
+  );
+  const [endDate, setEndDate] = useState(
+    searchParams.get("endDate") || ""
+  );
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState(""); // "error" or "success"
+  const [unavailable, setUnavailable] = useState(false);
+  const [alternatives, setAlternatives] = useState([]);
+  const [loadingAlternatives, setLoadingAlternatives] = useState(false);
 
   useEffect(() => {
     const fetchVehicle = async () => {
@@ -20,6 +30,7 @@ function VehicleDetails() {
         setVehicle(response.data.vehicle);
       } catch (error) {
         setMessage("Failed to load vehicle.");
+        setMessageType("error");
       } finally {
         setLoading(false);
       }
@@ -37,32 +48,84 @@ function VehicleDetails() {
 
     if (!startDate || !endDate) {
       setMessage("Please select both dates.");
+      setMessageType("error");
       return;
     }
 
     try {
       setBooking(true);
       setMessage("");
+      setMessageType("");
+      setUnavailable(false);
+      setAlternatives([]);
 
-      await api.post("/bookings", {
-        vehicleId: id,
-        startDate,
-        endDate,
-      });
+      // Check availability
+      const availabilityResponse = await api.get(
+        `/bookings/availability/${id}`,
+        {
+          params: { startDate, endDate },
+        }
+      );
 
-      setMessage("Booking created successfully!");
+      if (!availabilityResponse.data.available) {
+        // Vehicle is unavailable
+        setUnavailable(true);
+        setMessage(
+          "This vehicle is unavailable for your selected dates."
+        );
+        setMessageType("error");
 
-      setTimeout(() => {
-        navigate("/my-bookings");
-      }, 1000);
+        // Fetch alternative vehicles
+        try {
+          setLoadingAlternatives(true);
+          const alternativesResponse = await api.get(
+            `/vehicles/${id}/alternatives`,
+            {
+              params: { startDate, endDate },
+            }
+          );
+
+          if (
+            alternativesResponse.data.vehicles &&
+            alternativesResponse.data.vehicles.length > 0
+          ) {
+            setAlternatives(alternativesResponse.data.vehicles);
+          }
+        } catch (altError) {
+          console.error("Failed to fetch alternatives:", altError);
+        } finally {
+          setLoadingAlternatives(false);
+        }
+      } else {
+        // Vehicle is available, create booking
+        await api.post("/bookings", {
+          vehicleId: id,
+          startDate,
+          endDate,
+        });
+
+        setMessage("Booking created successfully!");
+        setMessageType("success");
+
+        setTimeout(() => {
+          navigate("/my-bookings");
+        }, 1000);
+      }
     } catch (error) {
       setMessage(
-        error.response?.data?.message ||
-          "Booking failed."
+        error.response?.data?.message || "Booking failed."
       );
+      setMessageType("error");
     } finally {
       setBooking(false);
     }
+  };
+
+  const handleAlternativeClick = (altVehicleId) => {
+    // Navigate to the alternative vehicle with dates preserved
+    navigate(
+      `/vehicles/${altVehicleId}?startDate=${startDate}&endDate=${endDate}`
+    );
   };
 
   if (loading) {
@@ -147,7 +210,13 @@ function VehicleDetails() {
               </h2>
 
               {message && (
-                <div className="mb-4 rounded-lg bg-white p-3 text-sm">
+                <div
+                  className={`mb-4 rounded-lg p-3 text-sm ${
+                    messageType === "error"
+                      ? "bg-red-50 text-red-700"
+                      : "bg-green-50 text-green-700"
+                  }`}
+                >
                   {message}
                 </div>
               )}
@@ -186,6 +255,88 @@ function VehicleDetails() {
             </form>
           </div>
         </div>
+
+        {/* Show alternatives if vehicle is unavailable */}
+        {unavailable && alternatives.length > 0 && (
+          <div className="mt-12">
+            <div className="rounded-2xl bg-white p-8 shadow-lg">
+              <h2 className="mb-2 text-3xl font-bold text-slate-900">
+                Don't worry!
+              </h2>
+              <p className="mb-8 text-lg text-slate-600">
+                Here are some similar vehicles available for your
+                selected dates:
+              </p>
+
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {alternatives.map((alt) => (
+                  <div
+                    key={alt._id}
+                    className="overflow-hidden rounded-2xl bg-slate-50 shadow-md hover:shadow-lg transition-shadow"
+                  >
+                    <div>
+                      <img
+                        src={
+                          alt.images?.length > 0
+                            ? alt.images[0]
+                            : "https://via.placeholder.com/600x400?text=Ruvasgod+Auto"
+                        }
+                        alt={`${alt.make} ${alt.model}`}
+                        className="h-56 w-full object-cover"
+                      />
+                    </div>
+
+                    <div className="p-5">
+                      <h3 className="text-xl font-bold text-slate-900">
+                        {alt.make} {alt.model}
+                      </h3>
+
+                      <p className="mt-1 text-slate-500">
+                        {alt.year} • {alt.type}
+                      </p>
+
+                      <p className="mt-2 text-sm text-slate-600">
+                        {alt.transmission} • {alt.fuelType}
+                      </p>
+
+                      <p className="mt-4 text-lg font-semibold">
+                        ${alt.rentalPricePerDay}/day
+                      </p>
+
+                      <button
+                        onClick={() => handleAlternativeClick(alt._id)}
+                        className="mt-4 w-full rounded-lg bg-slate-900 px-4 py-3 text-center font-semibold text-white hover:bg-slate-800"
+                      >
+                        View Vehicle
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Show message if no alternatives found */}
+        {unavailable &&
+          alternatives.length === 0 &&
+          !loadingAlternatives && (
+            <div className="mt-12">
+              <div className="rounded-2xl bg-white p-8 shadow-lg">
+                <p className="text-lg text-slate-700">
+                  We couldn't find a similar vehicle for those dates.
+                  Try different dates or{" "}
+                  <button
+                    onClick={() => navigate("/vehicles")}
+                    className="font-semibold text-slate-900 underline hover:text-slate-700"
+                  >
+                    browse all vehicles
+                  </button>
+                  .
+                </p>
+              </div>
+            </div>
+          )}
       </div>
     </div>
   );
