@@ -85,10 +85,10 @@ function MyBookings() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 px-6 py-10">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,_rgba(148,163,184,0.16),_transparent_32%),linear-gradient(135deg,_#f8fafc_0%,_#e2e8f0_100%)] px-4 py-8 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-6xl">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-900">My Bookings</h1>
+          <h1 className="text-4xl font-bold tracking-tight text-slate-950">My Bookings</h1>
 
           <p className="mt-2 text-slate-500">
             View and manage your vehicle rentals.
@@ -135,23 +135,25 @@ function MyBookings() {
               return (
                 <div
                   key={booking._id}
-                  className="overflow-hidden rounded-2xl bg-white shadow"
+                  className="group overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-lg shadow-slate-900/5 transition duration-300 ease-out hover:-translate-y-1 hover:border-slate-300 hover:shadow-xl hover:shadow-slate-900/10"
                 >
                   <div className="grid md:grid-cols-[280px_1fr]">
-                    <img
-                      src={image}
-                      alt={`${vehicle?.make} ${vehicle?.model}`}
-                      className="h-full min-h-[220px] w-full object-cover"
-                    />
+                    <div className="flex min-h-[220px] items-center justify-center overflow-hidden border-b border-slate-200/70 bg-slate-100/80 p-3 md:border-b-0 md:border-r">
+                      <img
+                        src={image}
+                        alt={`${vehicle?.make} ${vehicle?.model}`}
+                        className="max-h-[260px] w-full object-contain transition duration-500 ease-out group-hover:scale-[1.03]"
+                      />
+                    </div>
 
                     <div className="p-6">
                       <div className="flex flex-col justify-between gap-4 sm:flex-row">
                         <div>
-                          <h2 className="text-2xl font-bold text-slate-900">
+                            <h2 className="text-2xl font-bold tracking-tight text-slate-950">
                             {vehicle?.make} {vehicle?.model}
                           </h2>
 
-                          <p className="mt-1 text-slate-500">
+                          <p className="mt-1 text-sm font-medium text-slate-500">
                             {vehicle?.year} • {vehicle?.type}
                           </p>
                         </div>

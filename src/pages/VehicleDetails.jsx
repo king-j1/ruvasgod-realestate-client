@@ -152,12 +152,14 @@ function VehicleDetails() {
   return (
     <div className="min-h-screen bg-slate-100 px-6 py-10">
       <div className="mx-auto max-w-6xl">
-        <div className="overflow-hidden rounded-2xl bg-white shadow-lg">
-          <img
-            src={image}
-            alt={`${vehicle.make} ${vehicle.model}`}
-            className="h-[450px] w-full object-cover"
-          />
+        <div className="group overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-lg shadow-slate-900/5 transition duration-300 ease-out hover:-translate-y-1 hover:border-slate-300 hover:shadow-xl hover:shadow-slate-900/10">
+          <div className="flex aspect-[4/3] items-center justify-center overflow-hidden border-b border-slate-200/70 bg-slate-100/80 p-4 sm:aspect-[16/9] sm:p-6">
+            <img
+              src={image}
+              alt={`${vehicle.make} ${vehicle.model}`}
+              className="h-full w-full object-contain transition duration-500 ease-out group-hover:scale-[1.03]"
+            />
+          </div>
 
           <div className="grid gap-8 p-8 md:grid-cols-2">
             <div>
