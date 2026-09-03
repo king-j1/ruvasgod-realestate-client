@@ -11,7 +11,8 @@ function PaymentCallbackSale() {
 
   useEffect(() => {
     const verifyPayment = async () => {
-      const reference = searchParams.get("reference");
+      const reference =
+        searchParams.get("reference") || searchParams.get("trxref");
 
       if (!reference) {
         setError("Payment reference was not found.");
