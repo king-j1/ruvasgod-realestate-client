@@ -22,6 +22,8 @@ function VehicleDetails() {
   const [unavailable, setUnavailable] = useState(false);
   const [alternatives, setAlternatives] = useState([]);
   const [loadingAlternatives, setLoadingAlternatives] = useState(false);
+  const [purchasing, setPurchasing] = useState(false);
+  const [purchaseMessage, setPurchaseMessage] = useState("");
 
   useEffect(() => {
     const fetchVehicle = async () => {
@@ -128,6 +130,46 @@ function VehicleDetails() {
     );
   };
 
+  const handlePurchase = async () => {
+    if (purchasing) {
+      return;
+    }
+
+    try {
+      setPurchasing(true);
+      setPurchaseMessage("");
+
+      const saleResponse = await api.post("/sales", {
+        vehicleId: id,
+      });
+      const saleId = saleResponse.data?.sale?._id;
+
+      if (!saleId) {
+        throw new Error("Purchase could not be initialized.");
+      }
+
+      const paymentResponse = await api.post("/payments/sales/initialize", {
+        saleId,
+      });
+      const authorizationUrl =
+        paymentResponse.data?.payment?.authorizationUrl;
+
+      if (!authorizationUrl) {
+        throw new Error("Purchase payment could not be initialized.");
+      }
+
+      window.location.href = authorizationUrl;
+    } catch (error) {
+      console.error("Sale payment initialization error:", error);
+      setPurchaseMessage(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to initialize purchase."
+      );
+      setPurchasing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -172,13 +214,20 @@ function VehicleDetails() {
                 {vehicle.transmission}
               </p>
 
-              <p className="mt-6 text-3xl font-bold">
-                ${vehicle.rentalPricePerDay}
-                <span className="text-base font-normal text-slate-500">
-                  {" "}
-                  / day
-                </span>
-              </p>
+              <div className="mt-6 space-y-1 text-3xl font-bold">
+                {vehicle.availableForSale && (
+                  <p>Sale: ${vehicle.price}</p>
+                )}
+
+                {vehicle.availableForRent && (
+                  <p>
+                    Rental: ${vehicle.rentalPricePerDay}
+                    <span className="text-base font-normal text-slate-500">
+                      {" "}/day
+                    </span>
+                  </p>
+                )}
+              </div>
 
               <p className="mt-6 text-slate-600">
                 {vehicle.description}
@@ -203,58 +252,97 @@ function VehicleDetails() {
               </div>
             </div>
 
-            <form
-              onSubmit={handleBooking}
-              className="rounded-xl bg-slate-50 p-6"
-            >
-              <h2 className="mb-5 text-2xl font-bold">
-                Rent this vehicle
-              </h2>
-
-              {message && (
-                <div
-                  className={`mb-4 rounded-lg p-3 text-sm ${
-                    messageType === "error"
-                      ? "bg-red-50 text-red-700"
-                      : "bg-green-50 text-green-700"
-                  }`}
+            <div className="space-y-6">
+              {vehicle.availableForRent && (
+                <form
+                  onSubmit={handleBooking}
+                  className="rounded-xl border border-slate-200 bg-slate-50 p-6 shadow-sm"
                 >
-                  {message}
-                </div>
+                  <h2 className="mb-5 text-2xl font-bold">
+                    Rent this vehicle
+                  </h2>
+
+                  {message && (
+                    <div
+                      className={`mb-4 rounded-lg p-3 text-sm ${
+                        messageType === "error"
+                          ? "bg-red-50 text-red-700"
+                          : "bg-green-50 text-green-700"
+                      }`}
+                    >
+                      {message}
+                    </div>
+                  )}
+
+                  <p className="mb-5 text-xl font-bold text-slate-900">
+                    ${vehicle.rentalPricePerDay}/day
+                  </p>
+
+                  <label className="mb-2 block font-medium">
+                    Start Date
+                  </label>
+
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    required
+                    className="mb-5 w-full rounded-lg border border-slate-300 px-4 py-3"
+                  />
+
+                  <label className="mb-2 block font-medium">
+                    End Date
+                  </label>
+
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    required
+                    className="mb-6 w-full rounded-lg border border-slate-300 px-4 py-3"
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={booking}
+                    className="w-full rounded-lg bg-slate-900 px-4 py-3 font-semibold text-white disabled:opacity-50"
+                  >
+                    {booking ? "Booking..." : "Book Vehicle"}
+                  </button>
+                </form>
               )}
 
-              <label className="mb-2 block font-medium">
-                Start Date
-              </label>
+              {vehicle.availableForSale && (
+                <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <h2 className="text-2xl font-bold">Buy this vehicle</h2>
 
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                required
-                className="mb-5 w-full rounded-lg border border-slate-300 px-4 py-3"
-              />
+                  <p className="mt-4 text-3xl font-bold text-slate-900">
+                    ${vehicle.price}
+                  </p>
 
-              <label className="mb-2 block font-medium">
-                End Date
-              </label>
+                  {purchaseMessage && (
+                    <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                      {purchaseMessage}
+                    </div>
+                  )}
 
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                required
-                className="mb-6 w-full rounded-lg border border-slate-300 px-4 py-3"
-              />
+                  <button
+                    type="button"
+                    onClick={handlePurchase}
+                    disabled={purchasing}
+                    className="mt-6 w-full rounded-lg bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {purchasing ? "Connecting to Paystack..." : "Buy Now"}
+                  </button>
+                </section>
+              )}
 
-              <button
-                type="submit"
-                disabled={booking || !vehicle.availableForRent}
-                className="w-full rounded-lg bg-slate-900 px-4 py-3 font-semibold text-white disabled:opacity-50"
-              >
-                {booking ? "Booking..." : "Book Vehicle"}
-              </button>
-            </form>
+              {!vehicle.availableForRent && !vehicle.availableForSale && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 text-center text-slate-600">
+                  This vehicle is currently unavailable.
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
