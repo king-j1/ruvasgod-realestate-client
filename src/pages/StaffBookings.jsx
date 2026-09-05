@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/axios";
@@ -29,6 +30,21 @@ function StaffBookings() {
   useEffect(() => {
     fetchBookings();
   }, []);
+
+  // Format rental dates without timezone shifting.
+  // A date such as "2026-09-05" should remain September 5.
+  const formatRentalDate = (dateValue) => {
+    if (!dateValue) return "";
+
+    const dateOnly = String(dateValue).slice(0, 10);
+    const [year, month, day] = dateOnly.split("-").map(Number);
+
+    if (!year || !month || !day) {
+      return "";
+    }
+
+    return new Date(year, month - 1, day).toLocaleDateString();
+  };
 
   const updateStatus = async (id, status) => {
     try {
@@ -171,8 +187,8 @@ function StaffBookings() {
                   <div>
                     <p className="text-sm text-slate-500">Rental</p>
                     <p className="font-semibold">
-                      {new Date(booking.startDate).toLocaleDateString()} →{" "}
-                      {new Date(booking.endDate).toLocaleDateString()}
+                      {formatRentalDate(booking.startDate)} →{" "}
+                      {formatRentalDate(booking.endDate)}
                     </p>
                   </div>
 
@@ -203,3 +219,4 @@ function StaffBookings() {
 }
 
 export default StaffBookings;
+

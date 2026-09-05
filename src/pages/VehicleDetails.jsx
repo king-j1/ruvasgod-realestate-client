@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import api from "../api/axios";
@@ -10,11 +11,9 @@ function VehicleDetails() {
 
   const [vehicle, setVehicle] = useState(null);
   const [startDate, setStartDate] = useState(
-    searchParams.get("startDate") || ""
+    searchParams.get("startDate") || "",
   );
-  const [endDate, setEndDate] = useState(
-    searchParams.get("endDate") || ""
-  );
+  const [endDate, setEndDate] = useState(searchParams.get("endDate") || "");
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
   const [message, setMessage] = useState("");
@@ -41,6 +40,20 @@ function VehicleDetails() {
     fetchVehicle();
   }, [id]);
 
+  const rentalDays =
+    startDate && endDate
+      ? Math.max(
+          0,
+          Math.ceil(
+            (new Date(endDate) - new Date(startDate)) /
+              (1000 * 60 * 60 * 24),
+          ),
+        )
+      : 0;
+
+  const rentalTotal =
+    rentalDays > 0 ? rentalDays * vehicle?.rentalPricePerDay : 0;
+
   const handleBooking = async (e) => {
     e.preventDefault();
 
@@ -66,25 +79,24 @@ function VehicleDetails() {
         `/bookings/availability/${id}`,
         {
           params: { startDate, endDate },
-        }
+        },
       );
 
       if (!availabilityResponse.data.available) {
         // Vehicle is unavailable
         setUnavailable(true);
-        setMessage(
-          "This vehicle is unavailable for your selected dates."
-        );
+        setMessage("This vehicle is unavailable for your selected dates.");
         setMessageType("error");
 
         // Fetch alternative vehicles
         try {
           setLoadingAlternatives(true);
+
           const alternativesResponse = await api.get(
             `/vehicles/${id}/alternatives`,
             {
               params: { startDate, endDate },
-            }
+            },
           );
 
           if (
@@ -114,9 +126,7 @@ function VehicleDetails() {
         }, 1000);
       }
     } catch (error) {
-      setMessage(
-        error.response?.data?.message || "Booking failed."
-      );
+      setMessage(error.response?.data?.message || "Booking failed.");
       setMessageType("error");
     } finally {
       setBooking(false);
@@ -126,7 +136,7 @@ function VehicleDetails() {
   const handleAlternativeClick = (altVehicleId) => {
     // Navigate to the alternative vehicle with dates preserved
     navigate(
-      `/vehicles/${altVehicleId}?startDate=${startDate}&endDate=${endDate}`
+      `/vehicles/${altVehicleId}?startDate=${startDate}&endDate=${endDate}`,
     );
   };
 
@@ -142,6 +152,7 @@ function VehicleDetails() {
       const saleResponse = await api.post("/sales", {
         vehicleId: id,
       });
+
       const saleId = saleResponse.data?.sale?._id;
 
       if (!saleId) {
@@ -151,6 +162,7 @@ function VehicleDetails() {
       const paymentResponse = await api.post("/payments/sales/initialize", {
         saleId,
       });
+
       const authorizationUrl =
         paymentResponse.data?.payment?.authorizationUrl;
 
@@ -161,11 +173,13 @@ function VehicleDetails() {
       window.location.href = authorizationUrl;
     } catch (error) {
       console.error("Sale payment initialization error:", error);
+
       setPurchaseMessage(
         error.response?.data?.message ||
           error.message ||
-          "Failed to initialize purchase."
+          "Failed to initialize purchase.",
       );
+
       setPurchasing(false);
     }
   };
@@ -210,28 +224,26 @@ function VehicleDetails() {
               </h1>
 
               <p className="mt-2 text-slate-500">
-                {vehicle.year} • {vehicle.type} •{" "}
-                {vehicle.transmission}
+                {vehicle.year} • {vehicle.type} • {vehicle.transmission}
               </p>
 
               <div className="mt-6 space-y-1 text-3xl font-bold">
                 {vehicle.availableForSale && (
-                  <p>Sale: ${vehicle.price}</p>
+                  <p>Sale: GHS {vehicle.price}</p>
                 )}
 
                 {vehicle.availableForRent && (
                   <p>
-                    Rental: ${vehicle.rentalPricePerDay}
+                    Rental: GHS {vehicle.rentalPricePerDay}
                     <span className="text-base font-normal text-slate-500">
-                      {" "}/day
+                      {" "}
+                      /day
                     </span>
                   </p>
                 )}
               </div>
 
-              <p className="mt-6 text-slate-600">
-                {vehicle.description}
-              </p>
+              <p className="mt-6 text-slate-600">{vehicle.description}</p>
 
               <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
                 <div>
@@ -275,8 +287,21 @@ function VehicleDetails() {
                   )}
 
                   <p className="mb-5 text-xl font-bold text-slate-900">
-                    ${vehicle.rentalPricePerDay}/day
+                    GHS {vehicle.rentalPricePerDay}/day
                   </p>
+
+                  {rentalDays > 0 && (
+                    <div className="mb-5 rounded-lg bg-slate-50 p-4">
+                      <p className="text-sm text-slate-500">
+                        {rentalDays} rental{" "}
+                        {rentalDays === 1 ? "day" : "days"}
+                      </p>
+
+                      <p className="text-xl font-bold text-slate-900">
+                        Total: GHS {rentalTotal}
+                      </p>
+                    </div>
+                  )}
 
                   <label className="mb-2 block font-medium">
                     Start Date
@@ -317,7 +342,7 @@ function VehicleDetails() {
                   <h2 className="text-2xl font-bold">Buy this vehicle</h2>
 
                   <p className="mt-4 text-3xl font-bold text-slate-900">
-                    ${vehicle.price}
+                    GHS {vehicle.price}
                   </p>
 
                   {purchaseMessage && (
@@ -332,7 +357,9 @@ function VehicleDetails() {
                     disabled={purchasing}
                     className="mt-6 w-full rounded-lg bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {purchasing ? "Connecting to Paystack..." : "Buy Now"}
+                    {purchasing
+                      ? "Connecting to Paystack..."
+                      : "Buy Now"}
                   </button>
                 </section>
               )}
@@ -353,16 +380,17 @@ function VehicleDetails() {
               <h2 className="mb-2 text-3xl font-bold text-slate-900">
                 Don't worry!
               </h2>
+
               <p className="mb-8 text-lg text-slate-600">
-                Here are some similar vehicles available for your
-                selected dates:
+                Here are some similar vehicles available for your selected
+                dates:
               </p>
 
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {alternatives.map((alt) => (
                   <div
                     key={alt._id}
-                    className="overflow-hidden rounded-2xl bg-slate-50 shadow-md hover:shadow-lg transition-shadow"
+                    className="overflow-hidden rounded-2xl bg-slate-50 shadow-md transition-shadow hover:shadow-lg"
                   >
                     <div>
                       <img
@@ -390,7 +418,7 @@ function VehicleDetails() {
                       </p>
 
                       <p className="mt-4 text-lg font-semibold">
-                        ${alt.rentalPricePerDay}/day
+                        GHS {alt.rentalPricePerDay}/day
                       </p>
 
                       <button
@@ -414,8 +442,8 @@ function VehicleDetails() {
             <div className="mt-12">
               <div className="rounded-2xl bg-white p-8 shadow-lg">
                 <p className="text-lg text-slate-700">
-                  We couldn't find a similar vehicle for those dates.
-                  Try different dates or{" "}
+                  We couldn't find a similar vehicle for those dates. Try
+                  different dates or{" "}
                   <button
                     onClick={() => navigate("/vehicles")}
                     className="font-semibold text-slate-900 underline hover:text-slate-700"

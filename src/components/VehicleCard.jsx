@@ -28,15 +28,16 @@ function VehicleCard({ vehicle }) {
         <div className="mt-5 space-y-2 rounded-xl border border-slate-200/80 bg-slate-50/80 p-4 text-sm">
           {vehicle.availableForSale && vehicle.price !== undefined && (
             <p className="font-semibold text-slate-800">
-              Sale: ${vehicle.price}
+              Sale: GHS {vehicle.price}
             </p>
           )}
 
-          {vehicle.availableForRent && vehicle.rentalPricePerDay !== undefined && (
-            <p className="font-semibold text-slate-800">
-              Rental: ${vehicle.rentalPricePerDay}/day
-            </p>
-          )}
+          {vehicle.availableForRent &&
+            vehicle.rentalPricePerDay !== undefined && (
+              <p className="font-semibold text-slate-800">
+                Rental: GHS {vehicle.rentalPricePerDay}/day
+              </p>
+            )}
 
           {!vehicle.availableForSale && !vehicle.availableForRent && (
             <p className="text-slate-500">Currently unavailable</p>

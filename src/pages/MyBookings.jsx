@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
@@ -31,6 +32,22 @@ function MyBookings() {
     fetchBookings();
   }, []);
 
+  // Format rental dates without timezone shifting.
+  // A date such as "2026-09-05" should remain September 5,
+  // instead of becoming September 4 in some timezones.
+  const formatRentalDate = (dateValue) => {
+    if (!dateValue) return "";
+
+    const dateOnly = String(dateValue).slice(0, 10);
+    const [year, month, day] = dateOnly.split("-").map(Number);
+
+    if (!year || !month || !day) {
+      return "";
+    }
+
+    return new Date(year, month - 1, day).toLocaleDateString();
+  };
+
   const cancelBooking = async (bookingId) => {
     const confirmed = window.confirm(
       "Are you sure you want to cancel this booking?",
@@ -56,6 +73,7 @@ function MyBookings() {
         bookingId,
         callback_url: `${window.location.origin}/payment/callback`,
       });
+
       const authorizationUrl = response.data?.payment?.authorizationUrl;
 
       if (!authorizationUrl) {
@@ -88,7 +106,9 @@ function MyBookings() {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,_rgba(148,163,184,0.16),_transparent_32%),linear-gradient(135deg,_#f8fafc_0%,_#e2e8f0_100%)] px-4 py-8 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-6xl">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold tracking-tight text-slate-950">My Bookings</h1>
+          <h1 className="text-4xl font-bold tracking-tight text-slate-950">
+            My Bookings
+          </h1>
 
           <p className="mt-2 text-slate-500">
             View and manage your vehicle rentals.
@@ -149,7 +169,7 @@ function MyBookings() {
                     <div className="p-6">
                       <div className="flex flex-col justify-between gap-4 sm:flex-row">
                         <div>
-                            <h2 className="text-2xl font-bold tracking-tight text-slate-950">
+                          <h2 className="text-2xl font-bold tracking-tight text-slate-950">
                             {vehicle?.make} {vehicle?.model}
                           </h2>
 
@@ -182,7 +202,7 @@ function MyBookings() {
                           <p className="text-sm text-slate-500">Start Date</p>
 
                           <p className="font-semibold">
-                            {new Date(booking.startDate).toLocaleDateString()}
+                            {formatRentalDate(booking.startDate)}
                           </p>
                         </div>
 
@@ -190,14 +210,16 @@ function MyBookings() {
                           <p className="text-sm text-slate-500">End Date</p>
 
                           <p className="font-semibold">
-                            {new Date(booking.endDate).toLocaleDateString()}
+                            {formatRentalDate(booking.endDate)}
                           </p>
                         </div>
 
                         <div>
                           <p className="text-sm text-slate-500">Total</p>
 
-                          <p className="font-semibold">${booking.totalPrice}</p>
+                          <p className="font-semibold">
+                            ${booking.totalPrice}
+                          </p>
                         </div>
                       </div>
 
