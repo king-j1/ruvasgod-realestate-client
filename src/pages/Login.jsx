@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import GoogleSignInButton from "../components/GoogleSignInButton";
 
 function Login() {
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [form, setForm] = useState({
     email: "",
@@ -13,6 +15,7 @@ function Login() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setForm({
@@ -36,10 +39,20 @@ function Login() {
         navigate("/vehicles");
       }
     } catch (error) {
-      setError(
-        error.response?.data?.message ||
-          "This account has been deactivated. Please contact an administrator."
-      );
+      setError(error.message || "Unable to sign in. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleCredential = async (credential) => {
+    try {
+      setError("");
+      setLoading(true);
+      const data = await googleLogin(credential);
+      navigate(data.user.role === "admin" ? "/admin" : "/vehicles");
+    } catch (googleError) {
+      setError(googleError.message || "Unable to sign in with Google.");
     } finally {
       setLoading(false);
     }
@@ -65,6 +78,23 @@ function Login() {
           </div>
         )}
 
+        {location.state?.message && !error && (
+          <div className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-700">
+            {location.state.message}
+          </div>
+        )}
+
+        <GoogleSignInButton
+          onCredential={handleGoogleCredential}
+          onError={() => setError("Unable to load Google sign-in.")}
+        />
+
+        <div className="my-5 flex items-center gap-3 text-sm text-slate-400">
+          <span className="h-px flex-1 bg-slate-200" />
+          or
+          <span className="h-px flex-1 bg-slate-200" />
+        </div>
+
         <div className="mb-4">
           <label className="mb-1 block text-sm font-medium">
             Email
@@ -86,14 +116,26 @@ function Login() {
           </label>
 
           <input
-            type="password"
+            type={showPassword ? "text" : "password"}
             name="password"
             value={form.password}
             onChange={handleChange}
             required
             className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-900"
           />
+
+          <button
+            type="button"
+            onClick={() => setShowPassword((visible) => !visible)}
+            className="mt-2 text-sm font-medium text-slate-600 underline"
+          >
+            {showPassword ? "Hide password" : "Show password"}
+          </button>
         </div>
+
+        <Link to="/forgot-password" className="mb-5 block text-sm font-semibold text-slate-700 underline">
+          Forgot Password?
+        </Link>
 
         <button
           type="submit"
@@ -102,6 +144,13 @@ function Login() {
         >
           {loading ? "Signing in..." : "Sign In"}
         </button>
+
+        <p className="mt-6 text-center text-sm text-slate-500">
+          Don&apos;t have an account?{" "}
+          <Link to="/register" className="font-semibold text-slate-900 underline">
+            Create account
+          </Link>
+        </p>
       </form>
     </div>
   );

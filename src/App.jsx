@@ -7,6 +7,8 @@ import StaffLayout from "./components/StaffLayout.jsx";
 import Home from "./pages/Home.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
+import ResetPassword from "./pages/ResetPassword.jsx";
 import Vehicles from "./pages/Vehicles.jsx";
 import MyBookings from "./pages/MyBookings.jsx";
 import MyPurchases from "./pages/MyPurchases.jsx";
@@ -45,6 +47,10 @@ function App() {
           <Route path="/login" element={<Login />} />
 
           <Route path="/register" element={<Register />} />
+
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           <Route path="/vehicles" element={<Vehicles />} />
 

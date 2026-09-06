@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import GoogleSignInButton from "../components/GoogleSignInButton";
 
 function Register() {
-  const { register } = useAuth();
+  const { register, googleLogin } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -11,10 +12,12 @@ function Register() {
     email: "",
     phone: "",
     password: "",
+    confirmPassword: "",
   });
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setForm({
@@ -30,6 +33,10 @@ function Register() {
       setError("");
       setLoading(true);
 
+      if (form.password !== form.confirmPassword) {
+        throw new Error("Passwords do not match.");
+      }
+
       await register(
         form.name,
         form.email,
@@ -39,10 +46,20 @@ function Register() {
 
       navigate("/login");
     } catch (error) {
-      setError(
-        error.response?.data?.message ||
-          "Registration failed. Please try again."
-      );
+      setError(error.message || "Registration failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleCredential = async (credential) => {
+    try {
+      setError("");
+      setLoading(true);
+      const data = await googleLogin(credential);
+      navigate(data.user.role === "admin" ? "/admin" : "/vehicles");
+    } catch (googleError) {
+      setError(googleError.message || "Unable to continue with Google.");
     } finally {
       setLoading(false);
     }
@@ -67,6 +84,17 @@ function Register() {
             {error}
           </div>
         )}
+
+        <GoogleSignInButton
+          onCredential={handleGoogleCredential}
+          onError={() => setError("Unable to load Google sign-in.")}
+        />
+
+        <div className="my-5 flex items-center gap-3 text-sm text-slate-400">
+          <span className="h-px flex-1 bg-slate-200" />
+          or
+          <span className="h-px flex-1 bg-slate-200" />
+        </div>
 
         <input
           name="name"
@@ -98,12 +126,31 @@ function Register() {
 
         <input
           name="password"
-          type="password"
+          type={showPassword ? "text" : "password"}
           placeholder="Password"
           value={form.password}
           onChange={handleChange}
           required
-          minLength={6}
+          minLength={12}
+          className="mb-6 w-full rounded-lg border border-slate-300 px-4 py-3"
+        />
+
+        <button
+          type="button"
+          onClick={() => setShowPassword((visible) => !visible)}
+          className="-mt-4 mb-4 text-sm font-medium text-slate-600 underline"
+        >
+          {showPassword ? "Hide password" : "Show password"}
+        </button>
+
+        <input
+          name="confirmPassword"
+          type={showPassword ? "text" : "password"}
+          placeholder="Confirm password"
+          value={form.confirmPassword}
+          onChange={handleChange}
+          required
+          minLength={12}
           className="mb-6 w-full rounded-lg border border-slate-300 px-4 py-3"
         />
 
@@ -114,6 +161,13 @@ function Register() {
         >
           {loading ? "Creating account..." : "Create Account"}
         </button>
+
+        <p className="mt-6 text-center text-sm text-slate-500">
+          Already have an account?{" "}
+          <Link to="/login" className="font-semibold text-slate-900 underline">
+            Sign in
+          </Link>
+        </p>
       </form>
     </div>
   );

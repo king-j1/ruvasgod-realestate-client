@@ -12,33 +12,79 @@ export function AuthProvider({ children }) {
     return localStorage.getItem("token");
   });
 
-  const login = async (email, password) => {
+  const request = async (path, options = {}) => {
     const API_URL = import.meta.env.VITE_API_URL;
-
-    const response = await fetch(`${API_URL}/api/auth/login`, {
-      method: "POST",
+    const response = await fetch(`${API_URL}/api/auth${path}`, {
       headers: {
         "Content-Type": "application/json",
+        ...(options.headers || {}),
       },
-      body: JSON.stringify({
-        email,
-        password,
-      }),
+      ...options,
     });
-
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Login failed");
+      const error = new Error(data.message || "Authentication request failed");
+      error.status = response.status;
+      throw error;
     }
 
+    return data;
+  };
+
+  const saveSession = (data) => {
     localStorage.setItem("token", data.token);
     localStorage.setItem("user", JSON.stringify(data.user));
-
     setToken(data.token);
     setUser(data.user);
-
     return data;
+  };
+
+  const login = async (email, password) => {
+    return saveSession(
+      await request("/login", {
+        method: "POST",
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      })
+    );
+  };
+
+  const register = async (name, email, phone, password) => {
+    return request("/register", {
+      method: "POST",
+      body: JSON.stringify({
+        name,
+        email,
+        phone,
+        password,
+      }),
+    });
+  };
+
+  const googleLogin = async (credential) => {
+    return saveSession(
+      await request("/google", {
+        method: "POST",
+        body: JSON.stringify({ credential }),
+      })
+    );
+  };
+
+  const forgotPassword = async (email) => {
+    return request("/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  };
+
+  const resetPassword = async (tokenValue, password) => {
+    return request("/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token: tokenValue, password }),
+    });
   };
 
   const logout = () => {
@@ -55,6 +101,10 @@ export function AuthProvider({ children }) {
         user,
         token,
         login,
+        register,
+        googleLogin,
+        forgotPassword,
+        resetPassword,
         logout,
       }}
     >
