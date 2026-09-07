@@ -8,6 +8,7 @@ function Register() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
+    username: "",
     name: "",
     email: "",
     phone: "",
@@ -38,6 +39,7 @@ function Register() {
       }
 
       await register(
+        form.username,
         form.name,
         form.email,
         form.phone,
@@ -84,6 +86,19 @@ function Register() {
             {error}
           </div>
         )}
+
+        <input
+          name="username"
+          placeholder="Username"
+          value={form.username}
+          onChange={handleChange}
+          required
+          minLength={3}
+          maxLength={20}
+          pattern="[A-Za-z0-9_]+"
+          title="Use 3 to 20 letters, numbers, or underscores"
+          className="mb-4 w-full rounded-lg border border-slate-300 px-4 py-3"
+        />
 
         <GoogleSignInButton
           onCredential={handleGoogleCredential}

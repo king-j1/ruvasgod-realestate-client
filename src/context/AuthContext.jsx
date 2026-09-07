@@ -40,22 +40,23 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  const login = async (email, password) => {
+  const login = async (identifier, password) => {
     return saveSession(
       await request("/login", {
         method: "POST",
         body: JSON.stringify({
-          email,
+          identifier,
           password,
         }),
       })
     );
   };
 
-  const register = async (name, email, phone, password) => {
+  const register = async (username, name, email, phone, password) => {
     return request("/register", {
       method: "POST",
       body: JSON.stringify({
+        username,
         name,
         email,
         phone,

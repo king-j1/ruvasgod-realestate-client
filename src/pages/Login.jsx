@@ -9,7 +9,7 @@ function Login() {
   const location = useLocation();
 
   const [form, setForm] = useState({
-    email: "",
+    identifier: "",
     password: "",
   });
 
@@ -31,7 +31,7 @@ function Login() {
       setError("");
       setLoading(true);
 
-      const data = await login(form.email, form.password);
+      const data = await login(form.identifier, form.password);
 
       if (data.user.role === "admin") {
         navigate("/admin");
@@ -97,13 +97,13 @@ function Login() {
 
         <div className="mb-4">
           <label className="mb-1 block text-sm font-medium">
-            Email
+            Username or Email
           </label>
 
           <input
-            type="email"
-            name="email"
-            value={form.email}
+            type="text"
+            name="identifier"
+            value={form.identifier}
             onChange={handleChange}
             required
             className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-900"
