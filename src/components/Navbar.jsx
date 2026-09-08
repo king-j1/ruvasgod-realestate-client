@@ -1,7 +1,13 @@
 
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { FiMenu, FiX, FiLogOut } from "react-icons/fi";
+import {
+  FiMenu,
+  FiX,
+  FiLogOut,
+  FiChevronRight,
+  FiUser,
+} from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 
 function Navbar() {
@@ -19,40 +25,64 @@ function Navbar() {
     navigate("/");
   };
 
+  const staffRoles = [
+    "manager",
+    "sales",
+    "rental",
+    "finance",
+    "vehicle_manager",
+  ];
+
+  const isStaff =
+    user && staffRoles.includes(user.role);
+
   const navClass = ({ isActive }) =>
-    `text-sm font-semibold transition ${
+    `relative py-2 text-[13px] font-semibold tracking-wide transition ${
       isActive
-        ? "text-slate-950"
-        : "text-slate-600 hover:text-slate-950"
+        ? "text-white"
+        : "text-slate-400 hover:text-white"
+    }`;
+
+  const mobileNavClass = ({ isActive }) =>
+    `flex items-center justify-between rounded-2xl px-4 py-3.5 text-sm font-semibold transition ${
+      isActive
+        ? "bg-white text-slate-950"
+        : "text-slate-300 hover:bg-white/5 hover:text-white"
     }`;
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="flex h-16 items-center justify-between">
-          {/* LOGO */}
+    <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#05070a]/90 text-white backdrop-blur-xl">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-[76px] items-center justify-between">
+
+          {/* BRAND */}
           <Link
             to="/"
             onClick={closeMobileMenu}
-            className="flex items-center gap-3"
+            className="group flex items-center gap-3"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-sm font-black text-white">
-              R
+            <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-white/15 bg-white/[0.06] shadow-lg transition duration-300 group-hover:border-cyan-400/40 group-hover:bg-white/10">
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/20 via-transparent to-blue-500/20 opacity-70" />
+
+              <span className="relative text-sm font-black tracking-tight text-white">
+                R
+              </span>
             </div>
 
-            <div>
-              <p className="text-lg font-black tracking-tight text-slate-900">
+            <div className="leading-none">
+              <p className="text-[17px] font-black tracking-[0.08em] text-white">
                 RUVASGOD
               </p>
 
-              <p className="text-[10px] font-semibold tracking-[0.25em] text-slate-500">
+              <p className="mt-1 text-[9px] font-semibold tracking-[0.38em] text-cyan-400">
                 AUTO
               </p>
             </div>
           </Link>
 
           {/* DESKTOP NAVIGATION */}
-          <div className="hidden items-center gap-6 lg:flex">
+          <div className="hidden items-center gap-7 lg:flex">
+
             <NavLink to="/" end className={navClass}>
               Home
             </NavLink>
@@ -81,27 +111,26 @@ function Navbar() {
                   Dashboard
                 </NavLink>
 
-                <NavLink to="/staff/dashboard" className={navClass}>
+                <NavLink
+                  to="/staff/dashboard"
+                  className={navClass}
+                >
                   Staff Portal
                 </NavLink>
               </>
             )}
 
             {/* STAFF */}
-            {user &&
-              [
-                "manager",
-                "sales",
-                "rental",
-                "finance",
-                "vehicle_manager",
-              ].includes(user.role) && (
-                <NavLink to="/staff/dashboard" className={navClass}>
-                  Staff Portal
-                </NavLink>
-              )}
+            {isStaff && (
+              <NavLink
+                to="/staff/dashboard"
+                className={navClass}
+              >
+                Staff Portal
+              </NavLink>
+            )}
 
-            {/* LOGGED OUT */}
+            {/* GUEST */}
             {!user && (
               <>
                 <NavLink to="/login" className={navClass}>
@@ -110,150 +139,164 @@ function Navbar() {
 
                 <Link
                   to="/register"
-                  className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                  className="group relative overflow-hidden rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-slate-950 transition duration-300 hover:bg-cyan-300"
                 >
-                  Sign Up
+                  <span className="relative z-10 flex items-center gap-2">
+                    Get Started
+                    <FiChevronRight
+                      size={15}
+                      className="transition-transform duration-300 group-hover:translate-x-0.5"
+                    />
+                  </span>
                 </Link>
               </>
             )}
 
             {/* LOGGED IN */}
             {user && (
-              <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
-                <div className="text-right">
-                  <p className="max-w-32 truncate text-xs font-semibold text-slate-900">
+              <div className="flex items-center gap-3 border-l border-white/10 pl-5">
+
+                <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.06]">
+                  <FiUser
+                    size={15}
+                    className="text-cyan-400"
+                  />
+                </div>
+
+                <div className="max-w-[130px]">
+                  <p className="truncate text-xs font-semibold text-white">
                     {user.name}
                   </p>
 
-                  <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                  <p className="mt-0.5 text-[9px] uppercase tracking-[0.16em] text-slate-500">
                     {user.role}
                   </p>
                 </div>
 
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                  className="ml-1 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-xs font-semibold text-slate-300 transition hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-400"
                 >
-                  <FiLogOut size={16} />
+                  <FiLogOut size={15} />
                   Logout
                 </button>
               </div>
             )}
           </div>
 
-          {/* MOBILE MENU BUTTON */}
+          {/* MOBILE BUTTON */}
           <button
             type="button"
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-100 lg:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-200 transition hover:border-white/20 hover:bg-white/[0.08] lg:hidden"
             aria-label="Toggle menu"
+            aria-expanded={mobileOpen}
           >
-            {mobileOpen ? <FiX size={22} /> : <FiMenu size={22} />}
+            {mobileOpen ? (
+              <FiX size={21} />
+            ) : (
+              <FiMenu size={21} />
+            )}
           </button>
         </div>
       </div>
 
       {/* MOBILE MENU */}
       {mobileOpen && (
-        <div className="border-t border-slate-200 bg-white lg:hidden">
-          <div className="mx-auto max-w-7xl space-y-1 px-4 py-4 sm:px-6">
-            <NavLink
-              to="/"
-              end
-              onClick={closeMobileMenu}
-              className={({ isActive }) =>
-                `block rounded-xl px-4 py-3 text-sm font-semibold ${
-                  isActive
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-700 hover:bg-slate-100"
-                }`
-              }
-            >
-              Home
-            </NavLink>
+        <div className="border-t border-white/10 bg-[#05070a] lg:hidden">
+          <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6">
 
-            <NavLink
-              to="/vehicles"
-              onClick={closeMobileMenu}
-              className={({ isActive }) =>
-                `block rounded-xl px-4 py-3 text-sm font-semibold ${
-                  isActive
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-700 hover:bg-slate-100"
-                }`
-              }
-            >
-              Vehicles
-            </NavLink>
+            <div className="mb-5 rounded-2xl border border-white/10 bg-white/[0.03] p-2">
 
-            {/* CUSTOMER MOBILE */}
-            {user?.role === "customer" && (
-              <>
-                <NavLink
-                  to="/my-bookings"
-                  onClick={closeMobileMenu}
-                  className={navClass}
-                >
-                  My Bookings
-                </NavLink>
+              <NavLink
+                to="/"
+                end
+                onClick={closeMobileMenu}
+                className={mobileNavClass}
+              >
+                <span>Home</span>
+                <FiChevronRight size={16} />
+              </NavLink>
 
-                <NavLink
-                  to="/my-purchases"
-                  onClick={closeMobileMenu}
-                  className={navClass}
-                >
-                  My Purchases
-                </NavLink>
-              </>
-            )}
+              <NavLink
+                to="/vehicles"
+                onClick={closeMobileMenu}
+                className={mobileNavClass}
+              >
+                <span>Vehicles</span>
+                <FiChevronRight size={16} />
+              </NavLink>
 
-            {/* ADMIN MOBILE */}
-            {user?.role === "admin" && (
-              <>
-                <NavLink
-                  to="/admin"
-                  onClick={closeMobileMenu}
-                  className={navClass}
-                >
-                  Dashboard
-                </NavLink>
+              {/* CUSTOMER */}
+              {user?.role === "customer" && (
+                <>
+                  <NavLink
+                    to="/my-bookings"
+                    onClick={closeMobileMenu}
+                    className={mobileNavClass}
+                  >
+                    <span>My Bookings</span>
+                    <FiChevronRight size={16} />
+                  </NavLink>
 
-                <NavLink
-                  to="/staff/dashboard"
-                  onClick={closeMobileMenu}
-                  className={navClass}
-                >
-                  Staff Portal
-                </NavLink>
-              </>
-            )}
-
-            {/* STAFF MOBILE */}
-            {user &&
-              [
-                "manager",
-                "sales",
-                "rental",
-                "finance",
-                "vehicle_manager",
-              ].includes(user.role) && (
-                <NavLink
-                  to="/staff/dashboard"
-                  onClick={closeMobileMenu}
-                  className={navClass}
-                >
-                  Staff Portal
-                </NavLink>
+                  <NavLink
+                    to="/my-purchases"
+                    onClick={closeMobileMenu}
+                    className={mobileNavClass}
+                  >
+                    <span>My Purchases</span>
+                    <FiChevronRight size={16} />
+                  </NavLink>
+                </>
               )}
 
+              {/* ADMIN */}
+              {user?.role === "admin" && (
+                <>
+                  <NavLink
+                    to="/admin"
+                    end
+                    onClick={closeMobileMenu}
+                    className={mobileNavClass}
+                  >
+                    <span>Dashboard</span>
+                    <FiChevronRight size={16} />
+                  </NavLink>
+
+                  <NavLink
+                    to="/staff/dashboard"
+                    onClick={closeMobileMenu}
+                    className={mobileNavClass}
+                  >
+                    <span>Staff Portal</span>
+                    <FiChevronRight size={16} />
+                  </NavLink>
+                </>
+              )}
+
+              {/* STAFF */}
+              {isStaff && (
+                <NavLink
+                  to="/staff/dashboard"
+                  onClick={closeMobileMenu}
+                  className={mobileNavClass}
+                >
+                  <span>Staff Portal</span>
+                  <FiChevronRight size={16} />
+                </NavLink>
+              )}
+            </div>
+
             {/* MOBILE AUTH */}
-            <div className="mt-3 border-t border-slate-200 pt-3">
+            <div className="border-t border-white/10 pt-5">
+
               {!user ? (
-                <div className="space-y-2">
+                <div className="grid gap-2 sm:grid-cols-2">
+
                   <Link
                     to="/login"
                     onClick={closeMobileMenu}
-                    className="block rounded-xl border border-slate-200 px-4 py-3 text-center text-sm font-semibold text-slate-700"
+                    className="flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.08]"
                   >
                     Log In
                   </Link>
@@ -261,33 +304,49 @@ function Navbar() {
                   <Link
                     to="/register"
                     onClick={closeMobileMenu}
-                    className="block rounded-xl bg-slate-900 px-4 py-3 text-center text-sm font-semibold text-white"
+                    className="flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-300"
                   >
-                    Sign Up
+                    Get Started
+                    <FiChevronRight size={16} />
                   </Link>
+
                 </div>
               ) : (
-                <>
-                  <div className="mb-3 rounded-xl bg-slate-50 px-4 py-3">
-                    <p className="font-semibold text-slate-900">
-                      {user.name}
-                    </p>
+                <div className="space-y-3">
 
-                    <p className="mt-1 text-xs uppercase tracking-wider text-slate-500">
-                      {user.role}
-                    </p>
+                  <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06]">
+                      <FiUser
+                        size={17}
+                        className="text-cyan-400"
+                      />
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-white">
+                        {user.name}
+                      </p>
+
+                      <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-slate-500">
+                        {user.role}
+                      </p>
+                    </div>
+
                   </div>
 
                   <button
                     onClick={handleLogout}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600"
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3.5 text-sm font-semibold text-red-400 transition hover:bg-red-500/15"
                   >
                     <FiLogOut size={17} />
                     Logout
                   </button>
-                </>
+
+                </div>
               )}
             </div>
+
           </div>
         </div>
       )}

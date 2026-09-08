@@ -13,11 +13,13 @@ function VehicleDetails() {
   const [startDate, setStartDate] = useState(
     searchParams.get("startDate") || "",
   );
-  const [endDate, setEndDate] = useState(searchParams.get("endDate") || "");
+  const [endDate, setEndDate] = useState(
+    searchParams.get("endDate") || "",
+  );
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
   const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState(""); // "error" or "success"
+  const [messageType, setMessageType] = useState("");
   const [unavailable, setUnavailable] = useState(false);
   const [alternatives, setAlternatives] = useState([]);
   const [loadingAlternatives, setLoadingAlternatives] = useState(false);
@@ -74,7 +76,6 @@ function VehicleDetails() {
       setUnavailable(false);
       setAlternatives([]);
 
-      // Check availability
       const availabilityResponse = await api.get(
         `/bookings/availability/${id}`,
         {
@@ -83,12 +84,10 @@ function VehicleDetails() {
       );
 
       if (!availabilityResponse.data.available) {
-        // Vehicle is unavailable
         setUnavailable(true);
         setMessage("This vehicle is unavailable for your selected dates.");
         setMessageType("error");
 
-        // Fetch alternative vehicles
         try {
           setLoadingAlternatives(true);
 
@@ -111,7 +110,6 @@ function VehicleDetails() {
           setLoadingAlternatives(false);
         }
       } else {
-        // Vehicle is available, create booking
         await api.post("/bookings", {
           vehicleId: id,
           startDate,
@@ -134,7 +132,6 @@ function VehicleDetails() {
   };
 
   const handleAlternativeClick = (altVehicleId) => {
-    // Navigate to the alternative vehicle with dates preserved
     navigate(
       `/vehicles/${altVehicleId}?startDate=${startDate}&endDate=${endDate}`,
     );
@@ -159,9 +156,12 @@ function VehicleDetails() {
         throw new Error("Purchase could not be initialized.");
       }
 
-      const paymentResponse = await api.post("/payments/sales/initialize", {
-        saleId,
-      });
+      const paymentResponse = await api.post(
+        "/payments/sales/initialize",
+        {
+          saleId,
+        },
+      );
 
       const authorizationUrl =
         paymentResponse.data?.payment?.authorizationUrl;
@@ -186,167 +186,425 @@ function VehicleDetails() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        Loading vehicle...
-      </div>
+      <main className="min-h-screen bg-[#07090c] text-white">
+        <div className="flex min-h-[75vh] items-center justify-center px-6">
+          <div className="text-center">
+            <div className="mx-auto mb-6 h-12 w-12 animate-spin rounded-full border-2 border-white/10 border-t-cyan-400" />
+
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/35">
+              Ruvasgod Auto
+            </p>
+
+            <p className="mt-3 text-white/60">
+              Preparing vehicle details...
+            </p>
+          </div>
+        </div>
+      </main>
     );
   }
 
   if (!vehicle) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        Vehicle not found.
-      </div>
+      <main className="min-h-screen bg-[#07090c] text-white">
+        <div className="flex min-h-[75vh] items-center justify-center px-6">
+          <div className="rounded-3xl border border-white/[0.08] bg-white/[0.03] p-10 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/35">
+              Ruvasgod Auto
+            </p>
+
+            <h1 className="mt-5 text-3xl font-semibold">
+              Vehicle not found
+            </h1>
+
+            <button
+              type="button"
+              onClick={() => navigate("/vehicles")}
+              className="mt-7 rounded-full bg-white px-6 py-3 text-sm font-semibold text-black transition hover:bg-cyan-300"
+            >
+              Browse Fleet
+            </button>
+          </div>
+        </div>
+      </main>
     );
   }
 
   const image =
     vehicle.images?.length > 0
       ? vehicle.images[0]
-      : "https://via.placeholder.com/800x500?text=Ruvasgod+Auto";
+      : "https://via.placeholder.com/1000x700?text=Ruvasgod+Auto";
+
+  const availableForRent = Boolean(vehicle.availableForRent);
+  const availableForSale = Boolean(vehicle.availableForSale);
+  const completelyUnavailable =
+    !availableForRent && !availableForSale;
+
+  const formattedSalePrice =
+    vehicle.price !== undefined && vehicle.price !== null
+      ? Number(vehicle.price).toLocaleString()
+      : null;
+
+  const formattedRentalPrice =
+    vehicle.rentalPricePerDay !== undefined &&
+    vehicle.rentalPricePerDay !== null
+      ? Number(vehicle.rentalPricePerDay).toLocaleString()
+      : null;
 
   return (
-    <div className="min-h-screen bg-slate-100 px-6 py-10">
-      <div className="mx-auto max-w-6xl">
-        <div className="group overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-lg shadow-slate-900/5 transition duration-300 ease-out hover:-translate-y-1 hover:border-slate-300 hover:shadow-xl hover:shadow-slate-900/10">
-          <div className="flex aspect-[4/3] items-center justify-center overflow-hidden border-b border-slate-200/70 bg-slate-100/80 p-4 sm:aspect-[16/9] sm:p-6">
+    <main className="min-h-screen bg-[#07090c] text-white">
+      {/* Main vehicle section */}
+      <section className="mx-auto max-w-7xl px-6 pb-16 pt-8 sm:px-8 lg:px-10 lg:pb-24 lg:pt-12">
+        {/* Back navigation */}
+        <button
+          type="button"
+          onClick={() => navigate("/vehicles")}
+          className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-white/45 transition hover:text-white"
+        >
+          <span className="text-lg">←</span>
+          Back to Fleet
+        </button>
+
+        <div className="overflow-hidden rounded-[2rem] border border-white/[0.08] bg-[#0b0e12] shadow-2xl shadow-black/30">
+          {/* Vehicle image */}
+          <div className="relative aspect-[16/10] overflow-hidden bg-[#11151a] lg:aspect-[16/8]">
             <img
               src={image}
               alt={`${vehicle.make} ${vehicle.model}`}
-              className="h-full w-full object-contain transition duration-500 ease-out group-hover:scale-[1.03]"
+              className={`h-full w-full object-cover ${
+                completelyUnavailable ? "grayscale opacity-60" : ""
+              }`}
             />
-          </div>
 
-          <div className="grid gap-8 p-8 md:grid-cols-2">
-            <div>
-              <h1 className="text-4xl font-bold text-slate-900">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+
+            {/* Brand */}
+            <div className="absolute left-5 top-5 sm:left-7 sm:top-7">
+              <span className="rounded-full border border-white/10 bg-black/40 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/75 backdrop-blur-md">
+                Ruvasgod Auto
+              </span>
+            </div>
+
+            {/* Availability */}
+            <div className="absolute right-5 top-5 sm:right-7 sm:top-7">
+              <span className="rounded-full border border-white/10 bg-black/40 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/75 backdrop-blur-md">
+                {availableForRent && availableForSale
+                  ? "Rent & Buy"
+                  : availableForRent
+                    ? "Available for Rent"
+                    : availableForSale
+                      ? "Available for Sale"
+                      : "Unavailable"}
+              </span>
+            </div>
+
+            {/* Vehicle name over image */}
+            <div className="absolute bottom-6 left-6 right-6 sm:bottom-8 sm:left-8 sm:right-8">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-300">
+                {vehicle.type || "Premium Vehicle"}
+              </p>
+
+              <h1 className="mt-2 text-4xl font-semibold tracking-[-0.03em] sm:text-5xl lg:text-6xl">
                 {vehicle.make} {vehicle.model}
               </h1>
 
-              <p className="mt-2 text-slate-500">
-                {vehicle.year} • {vehicle.type} • {vehicle.transmission}
+              <p className="mt-2 text-sm text-white/50 sm:text-base">
+                {vehicle.year}
+                {vehicle.transmission && (
+                  <>
+                    <span className="mx-2 text-white/20">•</span>
+                    {vehicle.transmission}
+                  </>
+                )}
               </p>
+            </div>
+          </div>
 
-              <div className="mt-6 space-y-1 text-3xl font-bold">
-                {vehicle.availableForSale && (
-                  <p>Sale: GHS {vehicle.price}</p>
+          {/* Details */}
+          <div className="grid gap-10 p-6 sm:p-8 lg:grid-cols-[1.05fr_0.95fr] lg:p-10">
+            {/* Left column */}
+            <div>
+              <div className="flex flex-wrap gap-3">
+                {vehicle.fuelType && (
+                  <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-xs text-white/55">
+                    {vehicle.fuelType}
+                  </span>
                 )}
 
-                {vehicle.availableForRent && (
-                  <p>
-                    Rental: GHS {vehicle.rentalPricePerDay}
-                    <span className="text-base font-normal text-slate-500">
-                      {" "}
-                      /day
+                {vehicle.color && (
+                  <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-xs text-white/55">
+                    {vehicle.color}
+                  </span>
+                )}
+
+                {vehicle.mileage !== undefined &&
+                  vehicle.mileage !== null && (
+                    <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-xs text-white/55">
+                      {vehicle.mileage} mileage
                     </span>
+                  )}
+              </div>
+
+              <div className="mt-8">
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-300/70">
+                  The Vehicle
+                </p>
+
+                <h2 className="mt-3 text-3xl font-semibold tracking-tight">
+                  Built for your next move.
+                </h2>
+
+                {vehicle.description && (
+                  <p className="mt-5 max-w-2xl text-sm leading-8 text-white/45 sm:text-base">
+                    {vehicle.description}
                   </p>
                 )}
               </div>
 
-              <p className="mt-6 text-slate-600">{vehicle.description}</p>
+              {/* Specifications */}
+              <div className="mt-10">
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/30">
+                  Specifications
+                </p>
 
-              <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <strong>Fuel:</strong> {vehicle.fuelType}
-                </div>
+                <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.07] sm:grid-cols-3">
+                  <div className="bg-[#0b0e12] p-5">
+                    <p className="text-[10px] uppercase tracking-[0.15em] text-white/25">
+                      Year
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-white/80">
+                      {vehicle.year || "—"}
+                    </p>
+                  </div>
 
-                <div>
-                  <strong>Color:</strong> {vehicle.color}
-                </div>
+                  <div className="bg-[#0b0e12] p-5">
+                    <p className="text-[10px] uppercase tracking-[0.15em] text-white/25">
+                      Transmission
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-white/80">
+                      {vehicle.transmission || "—"}
+                    </p>
+                  </div>
 
-                <div>
-                  <strong>Mileage:</strong> {vehicle.mileage}
-                </div>
+                  <div className="bg-[#0b0e12] p-5">
+                    <p className="text-[10px] uppercase tracking-[0.15em] text-white/25">
+                      Fuel
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-white/80">
+                      {vehicle.fuelType || "—"}
+                    </p>
+                  </div>
 
-                <div>
-                  <strong>Location:</strong> {vehicle.location}
+                  <div className="bg-[#0b0e12] p-5">
+                    <p className="text-[10px] uppercase tracking-[0.15em] text-white/25">
+                      Color
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-white/80">
+                      {vehicle.color || "—"}
+                    </p>
+                  </div>
+
+                  <div className="bg-[#0b0e12] p-5">
+                    <p className="text-[10px] uppercase tracking-[0.15em] text-white/25">
+                      Mileage
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-white/80">
+                      {vehicle.mileage ?? "—"}
+                    </p>
+                  </div>
+
+                  <div className="bg-[#0b0e12] p-5">
+                    <p className="text-[10px] uppercase tracking-[0.15em] text-white/25">
+                      Location
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-white/80">
+                      {vehicle.location || "—"}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-6">
-              {vehicle.availableForRent && (
+            {/* Right column */}
+            <div className="space-y-5 lg:sticky lg:top-8 lg:self-start">
+              {/* Pricing */}
+              {(availableForSale || availableForRent) && (
+                <div className="rounded-3xl border border-white/[0.08] bg-white/[0.025] p-6 sm:p-7">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/30">
+                    Pricing
+                  </p>
+
+                  <div className="mt-5 space-y-4">
+                    {availableForSale && formattedSalePrice && (
+                      <div className="flex items-end justify-between gap-4">
+                        <div>
+                          <p className="text-xs text-white/35">
+                            Purchase
+                          </p>
+
+                          <p className="mt-1 text-2xl font-semibold tracking-tight">
+                            GHS {formattedSalePrice}
+                          </p>
+                        </div>
+
+                        <span className="rounded-full bg-cyan-300/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-cyan-300">
+                          Buy
+                        </span>
+                      </div>
+                    )}
+
+                    {availableForRent && formattedRentalPrice && (
+                      <div className="flex items-end justify-between gap-4 border-t border-white/[0.07] pt-4">
+                        <div>
+                          <p className="text-xs text-white/35">
+                            Rental
+                          </p>
+
+                          <p className="mt-1 text-2xl font-semibold tracking-tight">
+                            GHS {formattedRentalPrice}
+                            <span className="ml-1 text-sm font-normal text-white/30">
+                              / day
+                            </span>
+                          </p>
+                        </div>
+
+                        <span className="rounded-full bg-white/[0.06] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/50">
+                          Rent
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Rental */}
+              {availableForRent && (
                 <form
                   onSubmit={handleBooking}
-                  className="rounded-xl border border-slate-200 bg-slate-50 p-6 shadow-sm"
+                  className="rounded-3xl border border-white/[0.08] bg-white/[0.025] p-6 shadow-xl shadow-black/20 sm:p-7"
                 >
-                  <h2 className="mb-5 text-2xl font-bold">
-                    Rent this vehicle
-                  </h2>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">
+                        Rental
+                      </p>
+
+                      <h2 className="mt-2 text-2xl font-semibold">
+                        Reserve your vehicle
+                      </h2>
+                    </div>
+
+                    <div className="text-right">
+                      <p className="text-lg font-semibold">
+                        GHS {formattedRentalPrice}
+                      </p>
+
+                      <p className="text-xs text-white/30">
+                        per day
+                      </p>
+                    </div>
+                  </div>
 
                   {message && (
                     <div
-                      className={`mb-4 rounded-lg p-3 text-sm ${
+                      className={`mt-6 rounded-2xl border p-4 text-sm leading-6 ${
                         messageType === "error"
-                          ? "bg-red-50 text-red-700"
-                          : "bg-green-50 text-green-700"
+                          ? "border-red-400/10 bg-red-400/[0.06] text-red-300"
+                          : "border-emerald-400/10 bg-emerald-400/[0.06] text-emerald-300"
                       }`}
                     >
                       {message}
                     </div>
                   )}
 
-                  <p className="mb-5 text-xl font-bold text-slate-900">
-                    GHS {vehicle.rentalPricePerDay}/day
-                  </p>
+                  <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label
+                        htmlFor="startDate"
+                        className="mb-2 block text-xs font-medium uppercase tracking-[0.15em] text-white/35"
+                      >
+                        Start Date
+                      </label>
+
+                      <input
+                        id="startDate"
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        required
+                        className="w-full rounded-xl border border-white/[0.08] bg-black/20 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-300/50 focus:ring-1 focus:ring-cyan-300/20"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="endDate"
+                        className="mb-2 block text-xs font-medium uppercase tracking-[0.15em] text-white/35"
+                      >
+                        End Date
+                      </label>
+
+                      <input
+                        id="endDate"
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        required
+                        className="w-full rounded-xl border border-white/[0.08] bg-black/20 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-300/50 focus:ring-1 focus:ring-cyan-300/20"
+                      />
+                    </div>
+                  </div>
 
                   {rentalDays > 0 && (
-                    <div className="mb-5 rounded-lg bg-slate-50 p-4">
-                      <p className="text-sm text-slate-500">
-                        {rentalDays} rental{" "}
-                        {rentalDays === 1 ? "day" : "days"}
-                      </p>
+                    <div className="mt-5 rounded-2xl border border-white/[0.07] bg-black/20 p-5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-white/40">
+                          {rentalDays}{" "}
+                          {rentalDays === 1 ? "day" : "days"}
+                        </span>
 
-                      <p className="text-xl font-bold text-slate-900">
-                        Total: GHS {rentalTotal}
+                        <span className="text-xl font-semibold">
+                          GHS{" "}
+                          {Number(rentalTotal).toLocaleString()}
+                        </span>
+                      </div>
+
+                      <p className="mt-2 text-xs text-white/25">
+                        Estimated rental total
                       </p>
                     </div>
                   )}
 
-                  <label className="mb-2 block font-medium">
-                    Start Date
-                  </label>
-
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    required
-                    className="mb-5 w-full rounded-lg border border-slate-300 px-4 py-3"
-                  />
-
-                  <label className="mb-2 block font-medium">
-                    End Date
-                  </label>
-
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    required
-                    className="mb-6 w-full rounded-lg border border-slate-300 px-4 py-3"
-                  />
-
                   <button
                     type="submit"
                     disabled={booking}
-                    className="w-full rounded-lg bg-slate-900 px-4 py-3 font-semibold text-white disabled:opacity-50"
+                    className="mt-5 w-full rounded-xl bg-white px-5 py-4 text-sm font-semibold text-black transition hover:bg-cyan-300 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {booking ? "Booking..." : "Book Vehicle"}
+                    {booking
+                      ? "Checking availability..."
+                      : "Reserve Vehicle"}
                   </button>
                 </form>
               )}
 
-              {vehicle.availableForSale && (
-                <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <h2 className="text-2xl font-bold">Buy this vehicle</h2>
+              {/* Purchase */}
+              {availableForSale && (
+                <section className="rounded-3xl border border-cyan-300/10 bg-cyan-300/[0.035] p-6 sm:p-7">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">
+                    Purchase
+                  </p>
 
-                  <p className="mt-4 text-3xl font-bold text-slate-900">
-                    GHS {vehicle.price}
+                  <h2 className="mt-2 text-2xl font-semibold">
+                    Make it yours.
+                  </h2>
+
+                  <p className="mt-3 text-sm leading-6 text-white/40">
+                    Secure this vehicle through the Ruvasgod Auto
+                    purchase process.
                   </p>
 
                   {purchaseMessage && (
-                    <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                    <div className="mt-5 rounded-2xl border border-red-400/10 bg-red-400/[0.06] p-4 text-sm leading-6 text-red-300">
                       {purchaseMessage}
                     </div>
                   )}
@@ -355,108 +613,109 @@ function VehicleDetails() {
                     type="button"
                     onClick={handlePurchase}
                     disabled={purchasing}
-                    className="mt-6 w-full rounded-lg bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="mt-6 w-full rounded-xl bg-cyan-300 px-5 py-4 text-sm font-semibold text-black transition hover:bg-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {purchasing
                       ? "Connecting to Paystack..."
-                      : "Buy Now"}
+                      : `Buy Now · GHS ${formattedSalePrice}`}
                   </button>
+
+                  <p className="mt-3 text-center text-[11px] text-white/25">
+                    Secure payment powered by Paystack
+                  </p>
                 </section>
               )}
 
-              {!vehicle.availableForRent && !vehicle.availableForSale && (
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 text-center text-slate-600">
-                  This vehicle is currently unavailable.
+              {/* Completely unavailable */}
+              {completelyUnavailable && (
+                <div className="rounded-3xl border border-white/[0.08] bg-white/[0.025] p-7 text-center">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.03] text-white/30">
+                    —
+                  </div>
+
+                  <h2 className="mt-5 text-xl font-semibold">
+                    Currently unavailable
+                  </h2>
+
+                  <p className="mt-3 text-sm leading-6 text-white/35">
+                    This vehicle is no longer available for rental or
+                    purchase.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate("/vehicles")}
+                    className="mt-6 rounded-full border border-white/[0.1] px-6 py-3 text-sm font-semibold text-white/70 transition hover:bg-white hover:text-black"
+                  >
+                    Explore Other Vehicles
+                  </button>
                 </div>
               )}
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Show alternatives if vehicle is unavailable */}
-        {unavailable && alternatives.length > 0 && (
-          <div className="mt-12">
-            <div className="rounded-2xl bg-white p-8 shadow-lg">
-              <h2 className="mb-2 text-3xl font-bold text-slate-900">
-                Don't worry!
-              </h2>
+      {/* Alternatives */}
+      {unavailable && (
+        <section className="mx-auto max-w-7xl px-6 pb-20 sm:px-8 lg:px-10">
+          <div className="border-t border-white/[0.06] pt-12">
+            {loadingAlternatives ? (
+              <div className="rounded-3xl border border-white/[0.07] bg-white/[0.025] p-10 text-center">
+                <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-cyan-400" />
 
-              <p className="mb-8 text-lg text-slate-600">
-                Here are some similar vehicles available for your selected
-                dates:
-              </p>
-
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {alternatives.map((alt) => (
-                  <div
-                    key={alt._id}
-                    className="overflow-hidden rounded-2xl bg-slate-50 shadow-md transition-shadow hover:shadow-lg"
-                  >
-                    <div>
-                      <img
-                        src={
-                          alt.images?.length > 0
-                            ? alt.images[0]
-                            : "https://via.placeholder.com/600x400?text=Ruvasgod+Auto"
-                        }
-                        alt={`${alt.make} ${alt.model}`}
-                        className="h-56 w-full object-cover"
-                      />
-                    </div>
-
-                    <div className="p-5">
-                      <h3 className="text-xl font-bold text-slate-900">
-                        {alt.make} {alt.model}
-                      </h3>
-
-                      <p className="mt-1 text-slate-500">
-                        {alt.year} • {alt.type}
-                      </p>
-
-                      <p className="mt-2 text-sm text-slate-600">
-                        {alt.transmission} • {alt.fuelType}
-                      </p>
-
-                      <p className="mt-4 text-lg font-semibold">
-                        GHS {alt.rentalPricePerDay}/day
-                      </p>
-
-                      <button
-                        onClick={() => handleAlternativeClick(alt._id)}
-                        className="mt-4 w-full rounded-lg bg-slate-900 px-4 py-3 text-center font-semibold text-white hover:bg-slate-800"
-                      >
-                        View Vehicle
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Show message if no alternatives found */}
-        {unavailable &&
-          alternatives.length === 0 &&
-          !loadingAlternatives && (
-            <div className="mt-12">
-              <div className="rounded-2xl bg-white p-8 shadow-lg">
-                <p className="text-lg text-slate-700">
-                  We couldn't find a similar vehicle for those dates. Try
-                  different dates or{" "}
-                  <button
-                    onClick={() => navigate("/vehicles")}
-                    className="font-semibold text-slate-900 underline hover:text-slate-700"
-                  >
-                    browse all vehicles
-                  </button>
-                  .
+                <p className="mt-4 text-sm text-white/40">
+                  Finding similar vehicles...
                 </p>
               </div>
-            </div>
-          )}
-      </div>
-    </div>
+            ) : alternatives.length > 0 ? (
+              <>
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-300">
+                  Suggested Vehicles
+                </p>
+
+                <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+                  Your journey doesn't have to stop.
+                </h2>
+
+                <p className="mt-3 max-w-2xl text-sm leading-7 text-white/40">
+                  This vehicle isn't available for your selected dates,
+                  but we've found other vehicles you may like.
+                </p>
+
+                <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {alternatives.map((alt) => (
+                    <VehicleCard
+                      key={alt._id}
+                      vehicle={alt}
+                    />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="rounded-3xl border border-white/[0.07] bg-white/[0.025] p-8 sm:p-10">
+                <p className="text-lg font-semibold text-white">
+                  No similar vehicles found.
+                </p>
+
+                <p className="mt-2 text-sm leading-7 text-white/40">
+                  Try different rental dates or browse the complete
+                  Ruvasgod Auto fleet.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => navigate("/vehicles")}
+                  className="mt-6 rounded-full bg-white px-6 py-3 text-sm font-semibold text-black transition hover:bg-cyan-300"
+                >
+                  Browse Fleet
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+    </main>
   );
 }
 
