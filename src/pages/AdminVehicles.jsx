@@ -58,6 +58,8 @@ function AdminVehicles() {
   const [loading, setLoading] = useState(true);
 
   const [editingVehicle, setEditingVehicle] = useState(null);
+  const [editType, setEditType] = useState(null);
+  const [salePrice, setSalePrice] = useState("");
   const [rentalPrice, setRentalPrice] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -87,21 +89,31 @@ function AdminVehicles() {
     fetchVehicles();
   }, []);
 
-  const startEditing = (vehicle) => {
+  const startEditing = (vehicle, type) => {
     setEditingVehicle(vehicle);
+    setEditType(type);
+    setSalePrice(vehicle.price || "");
     setRentalPrice(vehicle.rentalPricePerDay || "");
   };
 
   const cancelEditing = () => {
     setEditingVehicle(null);
+    setEditType(null);
+    setSalePrice("");
     setRentalPrice("");
   };
 
   const updateVehicle = async (e) => {
     e.preventDefault();
 
-    if (!rentalPrice || Number(rentalPrice) <= 0) {
-      alert("Please enter a valid rental price.");
+    const priceValue = editType === "sale" ? salePrice : rentalPrice;
+
+    if (!priceValue || Number(priceValue) <= 0) {
+      alert(
+        editType === "sale"
+          ? "Please enter a valid sale price."
+          : "Please enter a valid rental price."
+      );
       return;
     }
 
@@ -118,9 +130,11 @@ function AdminVehicles() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            rentalPricePerDay: Number(rentalPrice),
-          }),
+          body: JSON.stringify(
+            editType === "sale"
+              ? { price: Number(salePrice) }
+              : { rentalPricePerDay: Number(rentalPrice) }
+          ),
         }
       );
 
@@ -134,6 +148,8 @@ function AdminVehicles() {
       alert("Vehicle updated successfully!");
 
       setEditingVehicle(null);
+      setEditType(null);
+      setSalePrice("");
       setRentalPrice("");
 
       fetchVehicles();
@@ -624,17 +640,28 @@ function AdminVehicles() {
                   </div>
 
                   {/* Actions */}
-                  <div className="mt-5 flex gap-3 border-t border-white/[0.06] pt-5">
-                    <button
-                      onClick={() => startEditing(vehicle)}
-                      className="flex-1 rounded-xl border border-cyan-400/20 bg-cyan-400/[0.07] px-4 py-2.5 text-xs font-semibold text-cyan-300 transition hover:border-cyan-400/40 hover:bg-cyan-400/[0.12]"
-                    >
-                      Edit Rental
-                    </button>
+                  <div className="mt-5 flex flex-wrap gap-3 border-t border-white/[0.06] pt-5">
+                    {vehicle.availableForSale && (
+                      <button
+                        onClick={() => startEditing(vehicle, "sale")}
+                        className="min-w-[8rem] flex-1 rounded-xl border border-cyan-400/20 bg-cyan-400/[0.07] px-4 py-2.5 text-xs font-semibold text-cyan-300 transition hover:border-cyan-400/40 hover:bg-cyan-400/[0.12]"
+                      >
+                        Edit Sale
+                      </button>
+                    )}
+
+                    {vehicle.availableForRent && (
+                      <button
+                        onClick={() => startEditing(vehicle, "rental")}
+                        className="min-w-[8rem] flex-1 rounded-xl border border-cyan-400/20 bg-cyan-400/[0.07] px-4 py-2.5 text-xs font-semibold text-cyan-300 transition hover:border-cyan-400/40 hover:bg-cyan-400/[0.12]"
+                      >
+                        Edit Rental
+                      </button>
+                    )}
 
                     <button
                       onClick={() => deleteVehicle(vehicle._id)}
-                      className="flex-1 rounded-xl border border-red-400/15 bg-red-400/[0.04] px-4 py-2.5 text-xs font-semibold text-red-300 transition hover:border-red-400/30 hover:bg-red-400/[0.09]"
+                      className="min-w-[8rem] flex-1 rounded-xl border border-red-400/15 bg-red-400/[0.04] px-4 py-2.5 text-xs font-semibold text-red-300 transition hover:border-red-400/30 hover:bg-red-400/[0.09]"
                     >
                       Delete
                     </button>
@@ -678,7 +705,7 @@ function AdminVehicles() {
               <form onSubmit={updateVehicle} className="p-6">
                 <div>
                   <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">
-                    Rental Price Per Day
+                    {editType === "sale" ? "Sale Price" : "Rental Price Per Day"}
                   </label>
 
                   <div className="relative">
@@ -689,9 +716,17 @@ function AdminVehicles() {
                     <input
                       type="number"
                       min="1"
-                      value={rentalPrice}
-                      onChange={(e) => setRentalPrice(e.target.value)}
-                      placeholder="Enter rental price"
+                      value={editType === "sale" ? salePrice : rentalPrice}
+                      onChange={(e) =>
+                        editType === "sale"
+                          ? setSalePrice(e.target.value)
+                          : setRentalPrice(e.target.value)
+                      }
+                      placeholder={
+                        editType === "sale"
+                          ? "Enter sale price"
+                          : "Enter rental price"
+                      }
                       required
                       className="w-full rounded-xl border border-white/10 bg-white/[0.04] py-3 pl-14 pr-4 text-sm text-white outline-none transition placeholder:text-slate-700 focus:border-cyan-400/40 focus:bg-white/[0.06]"
                     />
