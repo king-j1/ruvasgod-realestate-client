@@ -1,319 +1,94 @@
-
+import { Link } from "react-router-dom";
 import {
   FaFacebookF,
   FaInstagram,
   FaLinkedinIn,
+  FaTiktok,
   FaXTwitter,
   FaYoutube,
-  FaTiktok,
-  FaWhatsapp,
 } from "react-icons/fa6";
-import { Link } from "react-router-dom";
+import { FiMapPin, FiPhone, FiMail, FiMessageCircle } from "react-icons/fi";
+
+const socialLinks = [
+  ["Facebook", FaFacebookF],
+  ["Instagram", FaInstagram],
+  ["LinkedIn", FaLinkedinIn],
+  ["X", FaXTwitter],
+  ["YouTube", FaYoutube],
+  ["TikTok", FaTiktok],
+];
+
+const contactItems = [
+  ["Office address", "Contact details coming soon", FiMapPin],
+  ["Telephone", "Coming soon", FiPhone],
+  ["Email", "Coming soon", FiMail],
+  ["WhatsApp", "Coming soon", FiMessageCircle],
+];
 
 function Footer() {
-  const socialLinks = [
-    { label: "Facebook", icon: <FaFacebookF />, href: "#" },
-    { label: "Instagram", icon: <FaInstagram />, href: "#" },
-    { label: "X", icon: <FaXTwitter />, href: "#" },
-    { label: "LinkedIn", icon: <FaLinkedinIn />, href: "#" },
-    { label: "YouTube", icon: <FaYoutube />, href: "#" },
-    { label: "TikTok", icon: <FaTiktok />, href: "#" },
-    { label: "WhatsApp", icon: <FaWhatsapp />, href: "#" },
-  ];
-
   return (
-    <footer className="relative overflow-hidden bg-[#05070a] text-white">
+    <footer className="border-t border-stone-200 bg-[#f7f3eb] text-stone-800">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-9 px-5 py-10 sm:grid-cols-2 sm:px-8 sm:py-12 lg:grid-cols-4 lg:gap-8 lg:px-10">
+        <section aria-labelledby="footer-company-heading">
+          <h2 className="sr-only" id="footer-company-heading">Company</h2>
+          <Link className="inline-flex items-center gap-3" to="/">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-900 text-lg font-bold text-white" aria-hidden="true">R</span>
+            <span className="leading-tight">
+              <span className="block text-sm font-extrabold tracking-wide text-stone-900">RUVA GOD</span>
+              <span className="block text-[10px] font-semibold tracking-[0.16em] text-amber-900">REAL ESTATE</span>
+            </span>
+          </Link>
+          <p className="mt-4 max-w-sm text-sm leading-6 text-stone-700">
+            Your trusted partner for property discovery, sales and real estate services.
+          </p>
+          <p className="mt-3 max-w-sm text-xs leading-5 text-stone-600">
+            Browse property listings verified and approved for publication, with customer service from the Ruvasgod team.
+          </p>
+        </section>
 
-      {/* Ambient glow */}
-      <div className="pointer-events-none absolute -left-40 top-20 h-80 w-80 rounded-full bg-cyan-500/10 blur-[120px]" />
-      <div className="pointer-events-none absolute -right-40 bottom-20 h-96 w-96 rounded-full bg-blue-600/10 blur-[140px]" />
+        <nav aria-label="Quick links">
+          <h2 className="text-sm font-bold text-stone-900">Quick links</h2>
+          <ul className="mt-4 space-y-3 text-sm">
+            <li><Link className="text-stone-700 hover:text-amber-900 hover:underline" to="/">Home</Link></li>
+            <li><Link className="text-stone-700 hover:text-amber-900 hover:underline" to="/properties">Properties</Link></li>
+            <li><Link className="text-stone-700 hover:text-amber-900 hover:underline" to="/login">Sign in</Link></li>
+            <li><Link className="text-stone-700 hover:text-amber-900 hover:underline" to="/register">Register</Link></li>
+          </ul>
+        </nav>
 
-      {/* Main Footer */}
-      <div className="relative mx-auto max-w-7xl px-6 py-20 lg:px-8">
-
-        <div className="grid gap-14 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
-
-          {/* BRAND */}
-          <div>
-
-            <Link
-              to="/"
-              className="group inline-flex items-center gap-3"
-            >
-              <div className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.06]">
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/20 via-transparent to-blue-500/20" />
-
-                <span className="relative text-sm font-black">
-                  R
+        <section aria-labelledby="footer-contact-heading">
+          <h2 className="text-sm font-bold text-stone-900" id="footer-contact-heading">Contact information</h2>
+          <ul className="mt-4 space-y-3">
+            {contactItems.map(([label, value, Icon]) => (
+              <li className="flex min-w-0 items-start gap-2.5 text-sm" key={label}>
+                <Icon className="mt-0.5 shrink-0 text-amber-900" aria-hidden="true" />
+                <span className="min-w-0">
+                  <span className="block font-semibold text-stone-800">{label}</span>
+                  <span className="block break-words text-stone-600">{value}</span>
                 </span>
-              </div>
+              </li>
+            ))}
+          </ul>
+        </section>
 
-              <div className="leading-none">
-                <p className="text-[18px] font-black tracking-[0.08em]">
-                  RUVASGOD
-                </p>
-
-                <p className="mt-1 text-[9px] font-semibold tracking-[0.4em] text-cyan-400">
-                  AUTO
-                </p>
-              </div>
-            </Link>
-
-            <p className="mt-7 max-w-md text-sm leading-7 text-slate-400">
-              Premium vehicle sales and rentals designed around quality,
-              trust, convenience, and a modern driving experience.
-            </p>
-
-            {/* Social */}
-            <div className="mt-7 flex flex-wrap gap-2.5">
-              {socialLinks.map((social) => (
-                <a
-                  key={social.label}
-                  href={social.href}
-                  aria-label={social.label}
-                  className={`flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-400 transition duration-300 hover:-translate-y-0.5 hover:border-white/20 hover:bg-white hover:text-slate-950 ${
-                    social.label === "WhatsApp"
-                      ? "hover:bg-cyan-300"
-                      : ""
-                  }`}
-                >
-                  {social.icon}
-                </a>
-              ))}
-            </div>
-
-            {/* Trust statement */}
-            <div className="mt-8 flex items-center gap-3">
-              <span className="h-px w-8 bg-cyan-400/60" />
-
-              <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-                Premium Mobility • Ghana
-              </span>
-            </div>
-          </div>
-
-          {/* EXPLORE */}
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-cyan-400">
-              Explore
-            </p>
-
-            <div className="mt-6 flex flex-col gap-4 text-sm text-slate-400">
-
-              <Link
-                to="/"
-                className="transition hover:translate-x-1 hover:text-white"
-              >
-                Home
-              </Link>
-
-              <Link
-                to="/vehicles"
-                className="transition hover:translate-x-1 hover:text-white"
-              >
-                Browse Vehicles
-              </Link>
-
-              <Link
-                to="/register"
-                className="transition hover:translate-x-1 hover:text-white"
-              >
-                Create Account
-              </Link>
-
-              <Link
-                to="/login"
-                className="transition hover:translate-x-1 hover:text-white"
-              >
-                Customer Login
-              </Link>
-            </div>
-          </div>
-
-          {/* SERVICES */}
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-cyan-400">
-              Services
-            </p>
-
-            <div className="mt-6 flex flex-col gap-4 text-sm text-slate-400">
-              <span>Vehicle Rentals</span>
-              <span>Vehicle Sales</span>
-              <span>Long-Term Rentals</span>
-              <span>Corporate Rentals</span>
-              <span>Premium Vehicles</span>
-            </div>
-          </div>
-
-          {/* SUPPORT */}
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-cyan-400">
-              Support
-            </p>
-
-            <div className="mt-6 flex flex-col gap-4 text-sm text-slate-400">
-
-              <a
-                href="tel:+233000000000"
-                className="transition hover:text-white"
-              >
-                +233 00 000 0000
-              </a>
-
-              <a
-                href="mailto:info@ruvasgodauto.com"
-                className="break-all transition hover:text-white"
-              >
-                info@ruvasgodauto.com
-              </a>
-
-              <span>Accra, Ghana</span>
-
-              <span>Mon – Sat: 8AM – 6PM</span>
-            </div>
-
-            <div className="mt-7 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                Need assistance?
-              </p>
-
-              <p className="mt-2 text-sm font-semibold text-white">
-                Our team is ready to help.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* RENTAL REQUIREMENTS */}
-        <div className="mt-20 overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-white/[0.06] to-white/[0.02]">
-
-          <div className="grid lg:grid-cols-[0.85fr_1.5fr]">
-
-            {/* Intro */}
-            <div className="relative border-b border-white/10 p-8 lg:border-b-0 lg:border-r lg:p-10">
-
-              <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-cyan-400/10 blur-3xl" />
-
-              <p className="relative text-[10px] font-bold uppercase tracking-[0.25em] text-cyan-400">
-                Before You Rent
-              </p>
-
-              <h2 className="relative mt-4 text-2xl font-black tracking-tight sm:text-3xl">
-                Rental
-                <br />
-                Requirements
-              </h2>
-
-              <p className="relative mt-5 max-w-sm text-sm leading-7 text-slate-400">
-                Our verification process helps us provide a safer and more
-                trusted rental experience for every customer.
-              </p>
-
-              <div className="mt-7 flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
-                <span className="text-xs text-slate-500">
-                  Verification protects everyone.
-                </span>
-              </div>
-            </div>
-
-            {/* Requirements */}
-            <div className="grid sm:grid-cols-2">
-
-              <div className="border-b border-white/10 p-7 sm:border-r">
-                <span className="text-xs font-bold text-cyan-400">
-                  01
-                </span>
-
-                <h4 className="mt-4 font-semibold text-white">
-                  Valid Driver's Licence
-                </h4>
-
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Required for every vehicle rental.
-                </p>
-              </div>
-
-              <div className="border-b border-white/10 p-7">
-                <span className="text-xs font-bold text-cyan-400">
-                  02
-                </span>
-
-                <h4 className="mt-4 font-semibold text-white">
-                  Valid Identification
-                </h4>
-
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Ghana Card, passport, or another accepted government ID.
-                </p>
-              </div>
-
-              <div className="p-7 sm:border-r">
-                <span className="text-xs font-bold text-cyan-400">
-                  03
-                </span>
-
-                <h4 className="mt-4 font-semibold text-white">
-                  Contact & Address
-                </h4>
-
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  A valid phone number and residential address.
-                </p>
-              </div>
-
-              <div className="p-7">
-                <span className="text-xs font-bold text-cyan-400">
-                  04
-                </span>
-
-                <h4 className="mt-4 font-semibold text-white">
-                  Additional Verification
-                </h4>
-
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Extra documents may be required for premium or high-value
-                  vehicles.
-                </p>
-              </div>
-
-            </div>
-          </div>
-        </div>
+        <section aria-labelledby="footer-social-heading">
+          <h2 className="text-sm font-bold text-stone-900" id="footer-social-heading">Follow us</h2>
+          <p className="mt-2 text-xs leading-5 text-stone-600">Social links will be added when official profiles are provided.</p>
+          <ul className="mt-4 grid grid-cols-2 gap-3">
+            {socialLinks.map(([label, Icon]) => (
+              <li className="flex min-h-10 items-center gap-2 rounded-lg border border-stone-200 bg-white/70 px-3 text-xs font-semibold text-stone-700" key={label}>
+                <Icon className="shrink-0 text-amber-900" aria-hidden="true" />
+                <span>{label}</span>
+                <span className="sr-only">link coming soon</span>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
 
-      {/* BOTTOM BAR */}
-      <div className="relative border-t border-white/10">
-        <div className="mx-auto flex max-w-7xl flex-col gap-5 px-6 py-7 text-xs text-slate-500 sm:px-8 md:flex-row md:items-center md:justify-between">
-
-          <p>
-            © {new Date().getFullYear()} Ruvasgod Auto. All rights reserved.
-          </p>
-
-          <div className="flex flex-wrap gap-x-6 gap-y-3">
-
-            <a
-              href="#"
-              className="transition hover:text-white"
-            >
-              Privacy Policy
-            </a>
-
-            <a
-              href="#"
-              className="transition hover:text-white"
-            >
-              Terms & Conditions
-            </a>
-
-            <a
-              href="#"
-              className="transition hover:text-white"
-            >
-              Rental Policy
-            </a>
-
-          </div>
+      <div className="border-t border-stone-200 px-5 py-4 sm:px-8 lg:px-10">
+        <div className="mx-auto max-w-7xl text-center text-xs text-stone-600 sm:text-start">
+          © {new Date().getFullYear()} Ruvasgod Real Estate. All rights reserved.
         </div>
       </div>
     </footer>

@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import SessionRestoreNotice from "./SessionRestoreNotice";
 
 const ALL_STAFF_ROLES = [
   "admin",
@@ -7,11 +8,22 @@ const ALL_STAFF_ROLES = [
   "sales",
   "rental",
   "finance",
-  "vehicle_manager",
 ];
 
 function StaffRoute({ children, roles }) {
-  const { user, token } = useAuth();
+  const { user, token, isRestoring, restoreError, retrySessionRestore, logout } = useAuth();
+
+  if (isRestoring) {
+    return (
+      <main className="flex min-h-[50vh] items-center justify-center bg-[#fffdf8] px-5">
+        <p className="text-sm font-medium text-stone-600" role="status">Restoring your secure session…</p>
+      </main>
+    );
+  }
+
+  if (restoreError) {
+    return <SessionRestoreNotice message={restoreError} onRetry={retrySessionRestore} onSignOut={logout} />;
+  }
 
   if (!token || !user) {
     return <Navigate to="/login" replace />;

@@ -1,16 +1,29 @@
-# React + Vite
+# Ruvasgod Real Estate frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The frontend is a React 19 and Vite application. It uses React Router, Axios,
+Tailwind CSS 4, and the existing authentication context.
 
-Currently, two official plugins are available:
+## Local development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Install frontend dependencies with `npm install`.
+2. Set `VITE_API_URL` in the frontend runtime environment to the backend origin
+   (without a trailing `/api`).
+3. Run `npm run dev`.
 
-## React Compiler
+The frontend Axios client appends `/api` to `VITE_API_URL`. Do not put backend
+credentials or secrets in frontend environment variables.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Available checks:
 
-## Expanding the ESLint configuration
+- `npm run lint`
+- `npm run build`
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Public property search
+
+The public pages call `GET /api/properties` and `GET /api/properties/:id`.
+Filtering and pagination are performed in the browser over the returned public
+property set. This is not equivalent to server-side filtering or pagination,
+and results are limited to what the public API returns.
+
+See [BACKEND_ENHANCEMENTS.md](./BACKEND_ENHANCEMENTS.md) for missing API
+capabilities identified during frontend implementation.

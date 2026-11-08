@@ -3,13 +3,23 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/axios";
 
+
 const STAFF_ROLES = [
   "manager",
   "sales",
   "rental",
   "finance",
-  "vehicle_manager",
+  "property_manager",
 ];
+
+const ROLE_LABELS = {
+  manager: "Operations Manager",
+  property_manager: "Property Manager",
+  sales: "Property Sales Officer",
+  rental: "Lettings Officer",
+  finance: "Finance Officer",
+  admin: "Administrator",
+};
 
 const emptyForm = {
   name: "",
@@ -25,7 +35,7 @@ function RoleBadge({ role }) {
     sales: "border-cyan-400/20 bg-cyan-400/10 text-cyan-300",
     rental: "border-blue-400/20 bg-blue-400/10 text-blue-300",
     finance: "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
-    vehicle_manager:
+    property_manager:
       "border-orange-400/20 bg-orange-400/10 text-orange-300",
     admin: "border-rose-400/20 bg-rose-400/10 text-rose-300",
   };
@@ -103,6 +113,8 @@ function StaffManagement() {
   };
 
   useEffect(() => {
+    // Load protected staff records after the screen mounts.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchStaff();
   }, []);
 
@@ -204,7 +216,7 @@ function StaffManagement() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#05080d]">
+      <div className="staff-page flex min-h-screen items-center justify-center bg-[#fffdf8]">
         <div className="text-center">
           <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-white/10 border-t-cyan-400" />
 
@@ -217,7 +229,7 @@ function StaffManagement() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#05080d] px-4 py-8 text-white sm:px-6 lg:px-8">
+    <div className="staff-page relative min-h-screen overflow-hidden bg-[#fffdf8] px-4 py-8 text-stone-900 sm:px-6 lg:px-8">
       {/* Ambient background */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-40 -top-40 h-96 w-96 rounded-full bg-cyan-500/10 blur-[120px]" />
@@ -248,7 +260,7 @@ function StaffManagement() {
 
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
                 {isAdmin
-                  ? "Create, manage, and control staff access across Ruvasgod Auto departments."
+                  ? "Create and manage staff access across Ruvasgod Real Estate."
                   : "View staff accounts and department assignments."}
               </p>
             </div>
@@ -544,7 +556,7 @@ function StaffManagement() {
         {/* Footer status */}
         <div className="mt-10 border-t border-white/10 pt-5">
           <div className="flex flex-col gap-2 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between">
-            <p>Ruvasgod Auto · Administration</p>
+            <p>Ruvasgod Real Estate · Administration</p>
 
             <p className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />

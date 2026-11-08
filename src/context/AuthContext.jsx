@@ -1,99 +1,167 @@
-import { createContext, useContext, useState } from "react";
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useEffect, useState } from "react";
+import api from "../api/axios";
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem("user");
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
+function readSavedSession() {
+  const token = localStorage.getItem("token");
+  const serializedUser = localStorage.getItem("user");
 
-  const [token, setToken] = useState(() => {
-    return localStorage.getItem("token");
-  });
+  if (!token || !serializedUser) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    return { token: null, user: null };
+  }
 
-  const request = async (path, options = {}) => {
-    const API_URL = import.meta.env.VITE_API_URL;
-    const response = await fetch(`${API_URL}/api/auth${path}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...(options.headers || {}),
-      },
-      ...options,
-    });
-    const data = await response.json();
-
-    if (!response.ok) {
-      const error = new Error(data.message || "Authentication request failed");
-      error.status = response.status;
-      throw error;
+  try {
+    const user = JSON.parse(serializedUser);
+    if (!user || typeof user !== "object" || typeof user.role !== "string") {
+      throw new Error("Saved account data is invalid.");
     }
 
-    return data;
+    return { token, user };
+  } catch {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    return { token: null, user: null };
+  }
+}
+
+function normalizeUser(user) {
+  return {
+    ...user,
+    id: user.id || user._id,
+  };
+}
+
+export function AuthProvider({ children }) {
+  const [session, setSession] = useState(readSavedSession);
+  const [isRestoring, setIsRestoring] = useState(Boolean(session.token));
+  const [restoreError, setRestoreError] = useState("");
+  const { token, user } = session;
+
+  const request = async (path, options = {}) => {
+    try {
+      const response = await api.request({
+        url: `/auth${path}`,
+        headers: { "Content-Type": "application/json" },
+        ...options,
+      });
+      return response.data;
+    } catch (requestError) {
+      const error = new Error(
+        requestError.response?.data?.message ||
+          requestError.message ||
+          "Authentication request failed",
+      );
+      error.status = requestError.response?.status;
+      throw error;
+    }
   };
 
   const saveSession = (data) => {
+    if (
+      typeof data?.token !== "string" ||
+      !data.token ||
+      !data.user ||
+      typeof data.user.role !== "string"
+    ) {
+      throw new Error("The authentication response did not contain a valid session.");
+    }
+
+    const nextSession = { token: data.token, user: normalizeUser(data.user) };
     localStorage.setItem("token", data.token);
-    localStorage.setItem("user", JSON.stringify(data.user));
-    setToken(data.token);
-    setUser(data.user);
-    return data;
+    localStorage.setItem("user", JSON.stringify(nextSession.user));
+    setSession(nextSession);
+    setRestoreError("");
+    setIsRestoring(false);
+    return { ...data, user: nextSession.user };
   };
 
-  const login = async (identifier, password) => {
-    return saveSession(
-      await request("/login", {
-        method: "POST",
-        body: JSON.stringify({
-          identifier,
-          password,
-        }),
+  useEffect(() => {
+    if (!token || !isRestoring) return undefined;
+
+    let active = true;
+
+    api.get("/auth/me")
+      .then(({ data }) => {
+        if (!active) return;
+        if (!data?.user || typeof data.user.role !== "string") {
+          throw new Error("The server returned an invalid account session.");
+        }
+
+        const verifiedUser = normalizeUser(data.user);
+        localStorage.setItem("user", JSON.stringify(verifiedUser));
+        setSession((current) => ({ ...current, user: verifiedUser }));
+        setRestoreError("");
       })
-    );
+      .catch((requestError) => {
+        if (!active) return;
+        if (requestError.response?.status !== 401) {
+          setRestoreError("We couldn't verify your saved session. Check your connection and try again.");
+          return;
+        }
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setSession({ token: null, user: null });
+      })
+      .finally(() => {
+        if (active) setIsRestoring(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isRestoring, token]);
+
+  const login = async (identifier, password) => {
+    return saveSession(await request("/login", {
+      method: "POST",
+      data: { identifier, password },
+    }));
   };
 
   const register = async (username, name, email, phone, password) => {
     return request("/register", {
       method: "POST",
-      body: JSON.stringify({
-        username,
-        name,
-        email,
-        phone,
-        password,
-      }),
+      data: { username, name, email, phone, password },
     });
   };
 
   const googleLogin = async (credential) => {
-    return saveSession(
-      await request("/google", {
-        method: "POST",
-        body: JSON.stringify({ credential }),
-      })
-    );
+    return saveSession(await request("/google", {
+      method: "POST",
+      data: { credential },
+    }));
   };
 
   const forgotPassword = async (email) => {
     return request("/forgot-password", {
       method: "POST",
-      body: JSON.stringify({ email }),
+      data: { email },
     });
   };
 
   const resetPassword = async (tokenValue, password) => {
     return request("/reset-password", {
       method: "POST",
-      body: JSON.stringify({ token: tokenValue, password }),
+      data: { token: tokenValue, password },
     });
   };
 
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    setSession({ token: null, user: null });
+    setRestoreError("");
+    setIsRestoring(false);
+  };
 
-    setToken(null);
-    setUser(null);
+  const retrySessionRestore = () => {
+    if (!token) return;
+    setRestoreError("");
+    setIsRestoring(true);
   };
 
   return (
@@ -101,6 +169,9 @@ export function AuthProvider({ children }) {
       value={{
         user,
         token,
+        isRestoring,
+        restoreError,
+        retrySessionRestore,
         login,
         register,
         googleLogin,
@@ -115,5 +186,9 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 }

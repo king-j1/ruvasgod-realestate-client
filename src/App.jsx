@@ -1,170 +1,126 @@
-
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AppShell from "./components/AppShell.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import StaffLayout from "./components/StaffLayout.jsx";
-
+import StaffRoute from "./components/StaffRoute.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
 import Home from "./pages/Home.jsx";
 import Login from "./pages/Login.jsx";
+import Properties from "./pages/Properties.jsx";
+import PropertyDetails from "./pages/PropertyDetails.jsx";
 import Register from "./pages/Register.jsx";
-import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
-import Vehicles from "./pages/Vehicles.jsx";
-import MyBookings from "./pages/MyBookings.jsx";
-import MyPurchases from "./pages/MyPurchases.jsx";
-import VehicleDetails from "./pages/VehicleDetails.jsx";
-
-import AdminDashboard from "./pages/AdminDashboard.jsx";
-import AdminVehicles from "./pages/AdminVehicles.jsx";
-import AdminBookings from "./pages/AdminBookings.jsx";
-
-import PaymentCallback from "./pages/PaymentCallback.jsx";
-import PaymentCallbackSale from "./pages/PaymentCallbackSale.jsx";
-
+import StaffCustomers from "./pages/StaffCustomers.jsx";
+import StaffPropertyEnquiries from "./pages/StaffPropertyEnquiries.jsx";
 import StaffDashboard from "./pages/StaffDashboard.jsx";
 import StaffManagement from "./pages/StaffManagement.jsx";
-import StaffCustomers from "./pages/StaffCustomers.jsx";
-import StaffVehicles from "./pages/StaffVehicles.jsx";
-import StaffBookings from "./pages/StaffBookings.jsx";
-import StaffSales from "./pages/StaffSales.jsx";
-import StaffPayments from "./pages/StaffPayments.jsx";
+import StaffProperties from "./pages/StaffProperties.jsx";
+import StaffPropertyCreate from "./pages/StaffPropertyCreate.jsx";
+import StaffPropertyDetails from "./pages/StaffPropertyDetails.jsx";
+import StaffPropertyEdit from "./pages/StaffPropertyEdit.jsx";
+import StaffPropertyVerification from "./pages/StaffPropertyVerification.jsx";
+import CustomerAccount from "./pages/CustomerAccount.jsx";
+import StaffCustomerDetails from "./pages/StaffCustomerDetails.jsx";
+import StaffOwners from "./pages/StaffOwners.jsx";
+import StaffOwnerCreate from "./pages/StaffOwnerCreate.jsx";
+import StaffOwnerDetails from "./pages/StaffOwnerDetails.jsx";
+import StaffPropertyViewings from "./pages/StaffPropertyViewings";
 
-import ProtectedRoute from "./components/ProtectedRoute.jsx";
-import StaffRoute from "./components/StaffRoute.jsx";
+const REAL_ESTATE_STAFF_ROLES = [
+  "admin",
+  "manager",
+  "sales",
+  "rental",
+  "finance",
+];
 
 function App() {
   return (
     <BrowserRouter>
       <AppShell>
         <Routes>
-
-          {/* =========================
-              PUBLIC WEBSITE
-          ========================= */}
-
           <Route path="/" element={<Home />} />
-
+          <Route path="/properties" element={<Properties />} />
+          <Route path="/properties/:id" element={<PropertyDetails />} />
           <Route path="/login" element={<Login />} />
-
           <Route path="/register" element={<Register />} />
-
           <Route path="/forgot-password" element={<ForgotPassword />} />
-
           <Route path="/reset-password" element={<ResetPassword />} />
-
-          <Route path="/vehicles" element={<Vehicles />} />
-
           <Route
-            path="/vehicles/:id"
-            element={<VehicleDetails />}
-          />
-
-
-          {/* =========================
-              CUSTOMER
-          ========================= */}
-
-          <Route
-            path="/my-bookings"
+            path="/account"
             element={
-              <ProtectedRoute>
-                <MyBookings />
+              <ProtectedRoute roles={["customer"]}>
+                <CustomerAccount />
               </ProtectedRoute>
             }
           />
-
           <Route
-            path="/my-purchases"
+            path="/my-requests"
             element={
-              <ProtectedRoute>
-                <MyPurchases />
+              <ProtectedRoute roles={["customer"]}>
+                <Navigate to="/account" replace />
               </ProtectedRoute>
             }
           />
-
-
-          {/* =========================
-              ADMIN
-          ========================= */}
-
           <Route
             path="/admin"
             element={
-              <ProtectedRoute adminOnly>
-                <AdminDashboard />
-              </ProtectedRoute>
+              <StaffRoute roles={["admin"]}>
+                <Navigate to="/staff/dashboard" replace />
+              </StaffRoute>
             }
           />
-
-          <Route
-            path="/admin/vehicles"
-            element={
-              <ProtectedRoute adminOnly>
-                <AdminVehicles />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/admin/bookings"
-            element={
-              <ProtectedRoute adminOnly>
-                <AdminBookings />
-              </ProtectedRoute>
-            }
-          />
-
-
-          {/* =========================
-              PAYMENTS
-          ========================= */}
-
-          <Route
-            path="/payment/callback"
-            element={
-              <ProtectedRoute>
-                <PaymentCallback />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/payment/sale/callback"
-            element={
-              <ProtectedRoute>
-                <PaymentCallbackSale />
-              </ProtectedRoute>
-            }
-          />
-
-
-          {/* =========================
-              STAFF PORTAL
-          ========================= */}
 
           <Route
             path="/staff"
             element={
-              <StaffRoute>
+              <StaffRoute roles={REAL_ESTATE_STAFF_ROLES}>
                 <StaffLayout />
               </StaffRoute>
             }
           >
-
-            {/* /staff */}
+            <Route index element={<StaffDashboard />} />
+            <Route path="dashboard" element={<StaffDashboard />} />
             <Route
-              index
-              element={<StaffDashboard />}
+              path="properties"
+              element={
+                <StaffRoute roles={["admin", "manager"]}>
+                  <StaffProperties />
+                </StaffRoute>
+              }
             />
-
-            {/* /staff/dashboard */}
             <Route
-              path="dashboard"
-              element={<StaffDashboard />}
+              path="property-verification"
+              element={
+                <StaffRoute roles={["admin", "manager"]}>
+                  <StaffPropertyVerification />
+                </StaffRoute>
+              }
             />
-
-
-            {/* /staff/staff */}
+            <Route
+              path="properties/new"
+              element={
+                <StaffRoute roles={["admin", "manager"]}>
+                  <StaffPropertyCreate />
+                </StaffRoute>
+              }
+            />
+            <Route
+              path="properties/:id"
+              element={
+                <StaffRoute roles={["admin", "manager"]}>
+                  <StaffPropertyDetails />
+                </StaffRoute>
+              }
+            />
+            <Route
+              path="properties/:id/edit"
+              element={
+                <StaffRoute roles={["admin", "manager"]}>
+                  <StaffPropertyEdit />
+                </StaffRoute>
+              }
+            />
             <Route
               path="staff"
               element={
@@ -173,97 +129,72 @@ function App() {
                 </StaffRoute>
               }
             />
-
-
-            {/* /staff/customers */}
+            <Route
+              path="property-enquiries"
+              element={
+                <StaffRoute roles={["admin", "manager", "sales", "rental"]}>
+                  <StaffPropertyEnquiries />
+                </StaffRoute>
+              }
+            />
             <Route
               path="customers"
               element={
-                <StaffRoute
-                  roles={[
-                    "admin",
-                    "manager",
-                    "sales",
-                    "rental",
-                  ]}
-                >
+                <StaffRoute roles={["admin", "manager", "sales", "rental"]}>
                   <StaffCustomers />
                 </StaffRoute>
               }
             />
-
-
-            {/* /staff/vehicles */}
             <Route
-              path="vehicles"
+              path="customers/:id"
               element={
-                <StaffRoute
-                  roles={[
-                    "admin",
-                    "manager",
-                    "vehicle_manager",
-                  ]}
-                >
-                  <StaffVehicles />
+                <StaffRoute roles={["admin", "manager", "sales", "rental"]}>
+                  <StaffCustomerDetails />
                 </StaffRoute>
               }
             />
-
-
-            {/* /staff/bookings */}
             <Route
-              path="bookings"
+              path="owners"
               element={
-                <StaffRoute
-                  roles={[
-                    "admin",
-                    "manager",
-                    "rental",
-                    "finance",
-                  ]}
-                >
-                  <StaffBookings />
+                <StaffRoute roles={["admin"]}>
+                  <StaffOwners />
                 </StaffRoute>
               }
             />
-
-
-            {/* /staff/sales */}
             <Route
-              path="sales"
+              path="owners/new"
+              element={
+                <StaffRoute roles={["admin"]}>
+                  <StaffOwnerCreate />
+                </StaffRoute>
+              }
+            />
+            <Route
+              path="owners/:id"
+              element={
+                <StaffRoute roles={["admin"]}>
+                  <StaffOwnerDetails />
+                </StaffRoute>
+              }
+            />
+            <Route
+              path="property-viewings"
               element={
                 <StaffRoute
                   roles={[
                     "admin",
                     "manager",
+                    "property_manager",
                     "sales",
-                    "finance",
+                    "rental",
                   ]}
                 >
-                  <StaffSales />
+                  <StaffPropertyViewings />
                 </StaffRoute>
               }
             />
-
-
-            {/* /staff/payments */}
-            <Route
-              path="payments"
-              element={
-                <StaffRoute
-                  roles={[
-                    "admin",
-                    "manager",
-                    "finance",
-                  ]}
-                >
-                  <StaffPayments />
-                </StaffRoute>
-              }
-            />
-
           </Route>
-
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppShell>
     </BrowserRouter>
