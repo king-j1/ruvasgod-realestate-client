@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
@@ -10,6 +11,8 @@ import {
   FiUsers,
   FiX,
   FiCalendar,
+  FiDollarSign,
+  FiCreditCard,
 } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -20,7 +23,9 @@ function StaffLayout() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+
   const role = user?.role;
+
   const navigationSections = [
     {
       label: t("operations"),
@@ -42,6 +47,35 @@ function StaffLayout() {
           label: t("propertyVerification"),
           icon: FiCheckCircle,
           roles: ["admin", "manager"],
+        },
+        {
+          to: "/staff/agreements/new",
+          label: "Create Agreement",
+          icon: FiFileText,
+          roles: ["admin", "manager", "sales", "rental"],
+        },
+        {
+          to: "/staff/agreements/templates",
+          label: "Agreement Templates",
+          icon: FiFileText,
+          roles: ["admin", "manager"],
+        },
+      ],
+    },
+    {
+      label: "Finance",
+      items: [
+        {
+          to: "/staff/finance",
+          label: "Payment queue",
+          icon: FiDollarSign,
+          roles: ["admin", "manager", "finance"],
+        },
+        {
+          to: "/staff/installments",
+          label: "Installment management",
+          icon: FiCreditCard,
+          roles: ["admin", "manager", "finance"],
         },
       ],
     },
@@ -103,7 +137,44 @@ function StaffLayout() {
   };
 
   const navClass = ({ isActive }) =>
-    `flex min-h-11 items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition ${isActive ? "bg-amber-900 text-white" : "text-stone-700 hover:bg-amber-50 hover:text-amber-950"}`;
+    `flex min-h-11 items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition ${
+      isActive
+        ? "bg-amber-900 text-white"
+        : "text-stone-700 hover:bg-amber-50 hover:text-amber-950"
+    }`;
+
+  const renderNavigation = (closeOnNavigate = false) => (
+    <nav className="space-y-5">
+      {navigationSections.map((section) => (
+        <section key={section.label}>
+          <h2 className="px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-900">
+            {section.label}
+          </h2>
+
+          <div className="space-y-1">
+            {section.items.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <NavLink
+                  className={navClass}
+                  end={item.to === "/staff/dashboard"}
+                  key={item.to}
+                  onClick={() => {
+                    if (closeOnNavigate) setMobileOpen(false);
+                  }}
+                  to={item.to}
+                >
+                  <Icon aria-hidden="true" />
+                  {item.label}
+                </NavLink>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+    </nav>
+  );
 
   return (
     <div className="staff-shell min-h-screen bg-[#fffdf8] text-stone-900">
@@ -119,6 +190,7 @@ function StaffLayout() {
             >
               {mobileOpen ? <FiX /> : <FiMenu />}
             </button>
+
             <Link className="leading-tight" to="/">
               <span className="block text-sm font-extrabold tracking-wide">
                 RUVASGOD
@@ -127,15 +199,19 @@ function StaffLayout() {
                 REAL ESTATE
               </span>
             </Link>
+
             <span className="hidden border-s border-stone-300 ps-4 text-xs font-semibold text-stone-500 sm:block">
               {t("workspace")}
             </span>
           </div>
+
           <div className="flex items-center gap-2 sm:gap-4">
             <LanguageSelect />
+
             <span className="hidden max-w-40 truncate text-xs font-semibold text-stone-700 sm:inline">
               {user?.name}
             </span>
+
             <button
               className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-stone-300 px-3 text-xs font-semibold text-stone-700 hover:bg-stone-100"
               onClick={signOut}
@@ -149,31 +225,8 @@ function StaffLayout() {
       </header>
 
       <aside className="fixed bottom-0 start-0 top-16 z-20 hidden w-64 border-e border-stone-200 bg-white p-4 lg:block">
-        <nav className="space-y-5">
-          {navigationSections.map((section) => (
-            <section key={section.label}>
-              <h2 className="px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-900">
-                {section.label}
-              </h2>
-              <div className="space-y-1">
-                {section.items.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <NavLink
-                      className={navClass}
-                      end={item.to === "/staff/dashboard"}
-                      key={item.to}
-                      to={item.to}
-                    >
-                      <Icon aria-hidden="true" />
-                      {item.label}
-                    </NavLink>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
-        </nav>
+        {renderNavigation()}
+
         <Link
           className="mt-8 block rounded-xl px-3.5 py-3 text-sm font-semibold text-stone-600 hover:bg-stone-100"
           to="/"
@@ -190,33 +243,10 @@ function StaffLayout() {
             onClick={() => setMobileOpen(false)}
             type="button"
           />
-          <aside className="relative h-full w-[min(85vw,300px)] border-e border-stone-200 bg-white p-4 shadow-xl">
-            <nav className="space-y-5">
-              {navigationSections.map((section) => (
-                <section key={section.label}>
-                  <h2 className="px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-900">
-                    {section.label}
-                  </h2>
-                  <div className="space-y-1">
-                    {section.items.map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <NavLink
-                          className={navClass}
-                          end={item.to === "/staff/dashboard"}
-                          key={item.to}
-                          onClick={() => setMobileOpen(false)}
-                          to={item.to}
-                        >
-                          <Icon aria-hidden="true" />
-                          {item.label}
-                        </NavLink>
-                      );
-                    })}
-                  </div>
-                </section>
-              ))}
-            </nav>
+
+          <aside className="relative h-full w-[min(85vw,300px)] overflow-y-auto border-e border-stone-200 bg-white p-4 shadow-xl">
+            {renderNavigation(true)}
+
             <Link
               className="mt-8 block rounded-xl px-3.5 py-3 text-sm font-semibold text-stone-600 hover:bg-stone-100"
               onClick={() => setMobileOpen(false)}

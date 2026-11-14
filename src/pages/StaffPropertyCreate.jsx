@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
@@ -8,6 +9,7 @@ const initialForm = {
   description: "",
   propertyType: "LAND",
   listingType: "SALE",
+  acceptedPaymentMethods: [],
   price: "",
   currency: "GHS",
   region: "",
@@ -27,7 +29,28 @@ function StaffPropertyCreate() {
   const navigate = useNavigate();
 
   const update = (event) => {
-    setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+    const { name, value } = event.target;
+
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+      ...(name === "listingType" && value === "RENT"
+        ? { acceptedPaymentMethods: [] }
+        : {}),
+    }));
+  };
+
+  const togglePaymentMethod = (method) => {
+    setForm((current) => {
+      const methods = current.acceptedPaymentMethods;
+
+      return {
+        ...current,
+        acceptedPaymentMethods: methods.includes(method)
+          ? methods.filter((item) => item !== method)
+          : [...methods, method],
+      };
+    });
   };
 
   const submit = async (event) => {
@@ -37,14 +60,17 @@ function StaffPropertyCreate() {
     const price = Number(form.price);
     const longitude = Number(form.longitude);
     const latitude = Number(form.latitude);
+
     if (!form.ownerRecord.trim()) {
       setError("Enter the assigned property owner record ID.");
       return;
     }
+
     if (!Number.isFinite(price) || price < 0) {
       setError("Enter a valid non-negative price.");
       return;
     }
+
     if (
       form.longitude === "" ||
       form.latitude === "" ||
@@ -55,17 +81,32 @@ function StaffPropertyCreate() {
       latitude < -90 ||
       latitude > 90
     ) {
-      setError("Enter valid GPS coordinates: longitude -180 to 180 and latitude -90 to 90.");
+      setError(
+        "Enter valid GPS coordinates: longitude -180 to 180 and latitude -90 to 90."
+      );
+      return;
+    }
+
+    if (
+      form.listingType === "SALE" &&
+      form.acceptedPaymentMethods.length === 0
+    ) {
+      setError("Select at least one payment method for this property.");
       return;
     }
 
     try {
       setSaving(true);
+
       const response = await api.post("/properties/staff/create", {
         title: form.title.trim(),
         description: form.description.trim(),
         propertyType: form.propertyType,
         listingType: form.listingType,
+        acceptedPaymentMethods:
+          form.listingType === "SALE"
+            ? form.acceptedPaymentMethods
+            : [],
         price,
         currency: form.currency.trim() || "GHS",
         address: {
@@ -74,58 +115,320 @@ function StaffPropertyCreate() {
           area: form.area.trim(),
           addressLine: form.addressLine.trim(),
         },
-        location: { type: "Point", coordinates: [longitude, latitude] },
+        location: {
+          type: "Point",
+          coordinates: [longitude, latitude],
+        },
         ownerRecord: form.ownerRecord.trim(),
       });
+
       const propertyId = response.data?.property?.id;
+
       if (!propertyId) {
-        throw new Error("The property was created, but the server did not return its identifier.");
+        throw new Error(
+          "The property was created, but the server did not return its identifier."
+        );
       }
-      navigate(`/staff/properties/${propertyId}`, { replace: true });
+
+      navigate(`/staff/properties/${propertyId}`, {
+        replace: true,
+      });
     } catch (requestError) {
-      setError(requestError.response?.data?.message || requestError.message || "Unable to create the property.");
+      setError(
+        requestError.response?.data?.message ||
+          requestError.message ||
+          "Unable to create the property."
+      );
     } finally {
       setSaving(false);
     }
   };
 
-  const inputClass = "mt-1.5 w-full rounded-xl border border-stone-300 bg-white px-3.5 py-3 text-sm text-stone-900 outline-none focus:border-amber-800";
+  const inputClass =
+    "mt-1.5 w-full rounded-xl border border-stone-300 bg-white px-3.5 py-3 text-sm text-stone-900 outline-none focus:border-amber-800";
+
   const labelClass = "block text-sm font-semibold text-stone-700";
 
   return (
     <main className="staff-page min-h-screen bg-[#fffdf8] px-4 py-8 sm:px-7 lg:px-10">
       <div className="mx-auto max-w-4xl">
-        <Link className="text-sm font-semibold text-amber-900 hover:underline" to="/staff/properties">← Back to properties</Link>
+        <Link
+          className="text-sm font-semibold text-amber-900 hover:underline"
+          to="/staff/properties"
+        >
+          ← Back to properties
+        </Link>
+
         <header className="mt-6">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-900">{t("propertyManagement")}</p>
-          <h1 className="mt-2 text-3xl font-semibold text-stone-900">{t("createProperty")}</h1>
-          <p className="mt-2 text-sm leading-6 text-stone-600">{t("draftWorkflowNote")}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-900">
+            {t("propertyManagement")}
+          </p>
+
+          <h1 className="mt-2 text-3xl font-semibold text-stone-900">
+            {t("createProperty")}
+          </h1>
+
+          <p className="mt-2 text-sm leading-6 text-stone-600">
+            {t("draftWorkflowNote")}
+          </p>
         </header>
 
         <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
           {t("staffOwnerPermissionNote")}
         </div>
-        {error && <p className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">{error}</p>}
+
+        {error && (
+          <p
+            className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+            role="alert"
+          >
+            {error}
+          </p>
+        )}
 
         <form className="mt-6 space-y-6" onSubmit={submit}>
           <section className="grid gap-4 rounded-2xl border border-stone-200 bg-white p-5 sm:grid-cols-2 sm:p-7">
-            <label className={`${labelClass} sm:col-span-2`}>{t("title")}<input className={inputClass} name="title" value={form.title} onChange={update} required maxLength={200} /></label>
-            <label className={`${labelClass} sm:col-span-2`}>{t("descriptionLabel")}<textarea className={inputClass} name="description" rows={5} value={form.description} onChange={update} required /></label>
-            <label className={labelClass}>{t("propertyTypeLabel")}<select className={inputClass} name="propertyType" value={form.propertyType} onChange={update}><option value="LAND">{t("land")}</option><option value="HOUSE">{t("house")}</option></select></label>
-            <label className={labelClass}>{t("listingTypeLabel")}<select className={inputClass} name="listingType" value={form.listingType} onChange={update}><option value="SALE">{t("sale")}</option><option value="RENT">{t("rent")}</option></select></label>
-            <label className={labelClass}>{t("priceLabel")}<input className={inputClass} name="price" type="number" min="0" step="any" value={form.price} onChange={update} required /></label>
-            <label className={labelClass}>{t("currencyLabel")}<input className={inputClass} name="currency" value={form.currency} onChange={update} required maxLength={8} /></label>
-            <label className={labelClass}>{t("regionLabel")}<input className={inputClass} name="region" value={form.region} onChange={update} /></label>
-            <label className={labelClass}>{t("cityLabel")}<input className={inputClass} name="city" value={form.city} onChange={update} /></label>
-            <label className={labelClass}>{t("areaLabel")}<input className={inputClass} name="area" value={form.area} onChange={update} /></label>
-            <label className={labelClass}>{t("addressLineLabel")}<input className={inputClass} name="addressLine" value={form.addressLine} onChange={update} /></label>
-            <label className={labelClass}>{t("longitude")}<input className={inputClass} name="longitude" type="number" step="any" value={form.longitude} onChange={update} required /></label>
-            <label className={labelClass}>{t("latitude")}<input className={inputClass} name="latitude" type="number" step="any" value={form.latitude} onChange={update} required /></label>
-            <label className={`${labelClass} sm:col-span-2`}>{t("assignedOwnerId")}<input className={inputClass} name="ownerRecord" value={form.ownerRecord} onChange={update} required autoComplete="off" /></label>
+            <label className={`${labelClass} sm:col-span-2`}>
+              {t("title")}
+              <input
+                className={inputClass}
+                name="title"
+                value={form.title}
+                onChange={update}
+                required
+                maxLength={200}
+              />
+            </label>
+
+            <label className={`${labelClass} sm:col-span-2`}>
+              {t("descriptionLabel")}
+              <textarea
+                className={inputClass}
+                name="description"
+                rows={5}
+                value={form.description}
+                onChange={update}
+                required
+              />
+            </label>
+
+            <label className={labelClass}>
+              {t("propertyTypeLabel")}
+              <select
+                className={inputClass}
+                name="propertyType"
+                value={form.propertyType}
+                onChange={update}
+                required
+              >
+                <option value="LAND">{t("land")}</option>
+                <option value="HOUSE">{t("house")}</option>
+                <option value="APARTMENT">Apartment</option>
+                <option value="COMMERCIAL">Commercial</option>
+                <option value="INDUSTRIAL">Industrial</option>
+              </select>
+            </label>
+
+            <label className={labelClass}>
+              {t("listingTypeLabel")}
+              <select
+                className={inputClass}
+                name="listingType"
+                value={form.listingType}
+                onChange={update}
+                required
+              >
+                <option value="SALE">{t("sale")}</option>
+                <option value="RENT">{t("rent")}</option>
+              </select>
+            </label>
+
+            {/* ==================================
+                SALE PAYMENT OPTIONS
+            ================================== */}
+
+            {form.listingType === "SALE" && (
+              <div className="sm:col-span-2 rounded-xl border border-amber-200 bg-amber-50/60 p-5">
+                <h3 className="text-sm font-bold text-stone-900">
+                  Accepted Payment Methods
+                </h3>
+
+                <p className="mt-1 text-sm text-stone-600">
+                  Select the payment methods allowed for this property.
+                </p>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-stone-200 bg-white p-4">
+                    <input
+                      type="checkbox"
+                      className="mt-1 h-4 w-4 accent-amber-700"
+                      checked={form.acceptedPaymentMethods.includes(
+                        "FULL_PAYMENT"
+                      )}
+                      onChange={() =>
+                        togglePaymentMethod("FULL_PAYMENT")
+                      }
+                    />
+
+                    <span>
+                      <span className="block text-sm font-semibold text-stone-900">
+                        Full Payment
+                      </span>
+                      <span className="mt-1 block text-xs text-stone-600">
+                        Customer pays the entire agreed amount at once.
+                      </span>
+                    </span>
+                  </label>
+
+                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-stone-200 bg-white p-4">
+                    <input
+                      type="checkbox"
+                      className="mt-1 h-4 w-4 accent-amber-700"
+                      checked={form.acceptedPaymentMethods.includes(
+                        "INSTALLMENTS"
+                      )}
+                      onChange={() =>
+                        togglePaymentMethod("INSTALLMENTS")
+                      }
+                    />
+
+                    <span>
+                      <span className="block text-sm font-semibold text-stone-900">
+                        Installment Payment
+                      </span>
+                      <span className="mt-1 block text-xs text-stone-600">
+                        Customer pays through the existing PAIMS installment plan.
+                      </span>
+                    </span>
+                  </label>
+                </div>
+
+                <p className="mt-3 text-xs text-stone-600">
+                  You can select one method or both methods.
+                </p>
+              </div>
+            )}
+
+            <label className={labelClass}>
+              {t("priceLabel")}
+              <input
+                className={inputClass}
+                name="price"
+                type="number"
+                min="0"
+                step="any"
+                value={form.price}
+                onChange={update}
+                required
+              />
+            </label>
+
+            <label className={labelClass}>
+              {t("currencyLabel")}
+              <input
+                className={inputClass}
+                name="currency"
+                value={form.currency}
+                onChange={update}
+                required
+                maxLength={8}
+              />
+            </label>
+
+            <label className={labelClass}>
+              {t("regionLabel")}
+              <input
+                className={inputClass}
+                name="region"
+                value={form.region}
+                onChange={update}
+              />
+            </label>
+
+            <label className={labelClass}>
+              {t("cityLabel")}
+              <input
+                className={inputClass}
+                name="city"
+                value={form.city}
+                onChange={update}
+              />
+            </label>
+
+            <label className={labelClass}>
+              {t("areaLabel")}
+              <input
+                className={inputClass}
+                name="area"
+                value={form.area}
+                onChange={update}
+              />
+            </label>
+
+            <label className={labelClass}>
+              {t("addressLineLabel")}
+              <input
+                className={inputClass}
+                name="addressLine"
+                value={form.addressLine}
+                onChange={update}
+              />
+            </label>
+
+            <label className={labelClass}>
+              {t("longitude")}
+              <input
+                className={inputClass}
+                name="longitude"
+                type="number"
+                step="any"
+                value={form.longitude}
+                onChange={update}
+                required
+              />
+            </label>
+
+            <label className={labelClass}>
+              {t("latitude")}
+              <input
+                className={inputClass}
+                name="latitude"
+                type="number"
+                step="any"
+                value={form.latitude}
+                onChange={update}
+                required
+              />
+            </label>
+
+            <label className={`${labelClass} sm:col-span-2`}>
+              {t("assignedOwnerId")}
+              <input
+                className={inputClass}
+                name="ownerRecord"
+                value={form.ownerRecord}
+                onChange={update}
+                required
+                autoComplete="off"
+              />
+            </label>
           </section>
+
           <div className="flex flex-wrap gap-3">
-            <button className="button-primary min-h-11 rounded-xl px-5 py-3 text-sm font-bold disabled:opacity-50" disabled={saving} type="submit">{saving ? "Creating…" : t("createDraft")}</button>
-            <Link className="rounded-xl border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700" to="/staff/properties">{t("cancel")}</Link>
+            <button
+              className="button-primary min-h-11 rounded-xl px-5 py-3 text-sm font-bold disabled:opacity-50"
+              disabled={saving}
+              type="submit"
+            >
+              {saving ? "Creating…" : t("createDraft")}
+            </button>
+
+            <Link
+              className="rounded-xl border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700"
+              to="/staff/properties"
+            >
+              {t("cancel")}
+            </Link>
           </div>
         </form>
       </div>

@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "../api/axios";
@@ -8,6 +9,7 @@ const emptyForm = {
   description: "",
   propertyType: "LAND",
   listingType: "SALE",
+  acceptedPaymentMethods: [],
   price: "",
   currency: "GHS",
   region: "",
@@ -59,6 +61,11 @@ function StaffPropertyEdit() {
           description: property.description || "",
           propertyType: property.propertyType || "LAND",
           listingType: property.listingType || "SALE",
+          acceptedPaymentMethods: Array.isArray(
+            property.acceptedPaymentMethods
+          )
+            ? property.acceptedPaymentMethods
+            : [],
           price: property.price ?? "",
           currency: property.currency || "GHS",
           region: property.address?.region || "",
@@ -99,7 +106,24 @@ function StaffPropertyEdit() {
     setForm((current) => ({
       ...current,
       [name]: type === "checkbox" ? checked : value,
+
+      ...(name === "listingType" && value === "RENT"
+        ? { acceptedPaymentMethods: [] }
+        : {}),
     }));
+  }
+
+  function togglePaymentMethod(method) {
+    setForm((current) => {
+      const methods = current.acceptedPaymentMethods;
+
+      return {
+        ...current,
+        acceptedPaymentMethods: methods.includes(method)
+          ? methods.filter((item) => item !== method)
+          : [...methods, method],
+      };
+    });
   }
 
   function submitForm(event) {
@@ -150,6 +174,14 @@ function StaffPropertyEdit() {
       return;
     }
 
+    if (
+      form.listingType === "SALE" &&
+      form.acceptedPaymentMethods.length === 0
+    ) {
+      setError("Select at least one payment method for this SALE property.");
+      return;
+    }
+
     setShowWarning(true);
   }
 
@@ -166,22 +198,35 @@ function StaffPropertyEdit() {
         description: form.description.trim(),
         propertyType: form.propertyType,
         listingType: form.listingType,
+
+        acceptedPaymentMethods:
+          form.listingType === "SALE"
+            ? form.acceptedPaymentMethods
+            : [],
+
         price: Number(form.price),
         currency: form.currency.trim() || "GHS",
+
         address: {
           region: form.region.trim(),
           city: form.city.trim(),
           area: form.area.trim(),
           addressLine: form.addressLine.trim(),
         },
+
         location: {
           type: "Point",
-          coordinates: [Number(form.longitude), Number(form.latitude)],
+          coordinates: [
+            Number(form.longitude),
+            Number(form.latitude),
+          ],
         },
+
         landSize: {
           value: numericOptional(form.landSizeValue),
           unit: form.landSizeValue === "" ? null : form.landSizeUnit,
         },
+
         bedrooms: numericOptional(form.bedrooms),
         bathrooms: numericOptional(form.bathrooms),
         isFeatured: form.isFeatured,
@@ -220,6 +265,7 @@ function StaffPropertyEdit() {
       <main className="staff-page min-h-screen bg-[#fffdf8] p-8 text-stone-900">
         <h1 className="text-2xl font-bold">Unable to open editor</h1>
         <p className="mt-3 text-red-400">{error}</p>
+
         <Link
           to="/staff/properties"
           className="mt-5 inline-block text-cyan-400"
@@ -232,6 +278,7 @@ function StaffPropertyEdit() {
 
   const inputClass =
     "mt-2 w-full rounded-xl border border-white/15 bg-slate-900 px-4 py-3 text-white outline-none focus:border-cyan-400";
+
   const labelClass = "block text-sm font-semibold text-slate-300";
 
   return (
@@ -248,9 +295,11 @@ function StaffPropertyEdit() {
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-cyan-400">
             Ruvasgod Real Estate
           </p>
+
           <h1 className="mt-3 text-3xl font-black md:text-4xl">
             {t("editProperty")}
           </h1>
+
           <p className="mt-3 text-slate-400">
             {t("propertyChangeEffect")}
           </p>
@@ -260,6 +309,7 @@ function StaffPropertyEdit() {
           <h2 className="font-bold text-amber-300">
             {t("importantVerificationReset")}
           </h2>
+
           <p className="mt-2 text-sm leading-6 text-slate-200">
             {t("propertyChangeEffect")}
           </p>
@@ -276,7 +326,9 @@ function StaffPropertyEdit() {
 
         <form onSubmit={submitForm} className="mt-6 space-y-6">
           <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 md:p-7">
-            <h2 className="text-xl font-bold">{t("basicInformation")}</h2>
+            <h2 className="text-xl font-bold">
+              {t("basicInformation")}
+            </h2>
 
             <div className="mt-5 grid gap-5 md:grid-cols-2">
               <label className={`${labelClass} md:col-span-2`}>
@@ -318,6 +370,74 @@ function StaffPropertyEdit() {
                   <option value="RENT">{t("rent")}</option>
                 </select>
               </label>
+
+              {/* ==================================
+                  SALE PAYMENT OPTIONS
+              ================================== */}
+
+              {form.listingType === "SALE" && (
+                <div className="md:col-span-2 rounded-xl border border-amber-400/30 bg-amber-400/10 p-5">
+                  <h3 className="font-bold text-amber-300">
+                    Accepted Payment Methods
+                  </h3>
+
+                  <p className="mt-2 text-sm text-slate-300">
+                    Select the payment methods allowed for this property.
+                  </p>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-4">
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-4 w-4 accent-amber-400"
+                        checked={form.acceptedPaymentMethods.includes(
+                          "FULL_PAYMENT"
+                        )}
+                        onChange={() =>
+                          togglePaymentMethod("FULL_PAYMENT")
+                        }
+                      />
+
+                      <span>
+                        <span className="block font-semibold text-white">
+                          Full Payment
+                        </span>
+
+                        <span className="mt-1 block text-xs text-slate-400">
+                          Customer pays the entire agreed amount at once.
+                        </span>
+                      </span>
+                    </label>
+
+                    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-4">
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-4 w-4 accent-amber-400"
+                        checked={form.acceptedPaymentMethods.includes(
+                          "INSTALLMENTS"
+                        )}
+                        onChange={() =>
+                          togglePaymentMethod("INSTALLMENTS")
+                        }
+                      />
+
+                      <span>
+                        <span className="block font-semibold text-white">
+                          Installment Payment
+                        </span>
+
+                        <span className="mt-1 block text-xs text-slate-400">
+                          Customer pays through the existing PAIMS installment plan.
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+
+                  <p className="mt-3 text-xs text-slate-400">
+                    You can select one method or both methods.
+                  </p>
+                </div>
+              )}
 
               <label className={labelClass}>
                 {t("priceLabel")} *
@@ -370,7 +490,9 @@ function StaffPropertyEdit() {
           </section>
 
           <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 md:p-7">
-            <h2 className="text-xl font-bold">{t("locationAndGps")}</h2>
+            <h2 className="text-xl font-bold">
+              {t("locationAndGps")}
+            </h2>
 
             <div className="mt-5 grid gap-5 md:grid-cols-2">
               <label className={labelClass}>
@@ -450,7 +572,9 @@ function StaffPropertyEdit() {
           </section>
 
           <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 md:p-7">
-            <h2 className="text-xl font-bold">{t("propertyMeasurements")}</h2>
+            <h2 className="text-xl font-bold">
+              {t("propertyMeasurements")}
+            </h2>
 
             <div className="mt-5 grid gap-5 md:grid-cols-2">
               <label className={labelClass}>

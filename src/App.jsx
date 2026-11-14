@@ -8,6 +8,7 @@ import Home from "./pages/Home.jsx";
 import Login from "./pages/Login.jsx";
 import Properties from "./pages/Properties.jsx";
 import PropertyDetails from "./pages/PropertyDetails.jsx";
+import PropertyViewingPaymentCallback from "./pages/PropertyViewingPaymentCallback.jsx";
 import Register from "./pages/Register.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import StaffCustomers from "./pages/StaffCustomers.jsx";
@@ -25,6 +26,14 @@ import StaffOwners from "./pages/StaffOwners.jsx";
 import StaffOwnerCreate from "./pages/StaffOwnerCreate.jsx";
 import StaffOwnerDetails from "./pages/StaffOwnerDetails.jsx";
 import StaffPropertyViewings from "./pages/StaffPropertyViewings";
+import CustomerKyc from "./pages/CustomerKyc.jsx";
+import CustomerAgreements from "./pages/CustomerAgreements.jsx";
+import CustomerAgreementDetails from "./pages/CustomerAgreementDetails.jsx";
+import CustomerInstallments from "./pages/CustomerInstallments.jsx";
+import StaffPaymentQueue from "./pages/StaffPaymentQueue.jsx";
+import StaffInstallments from "./pages/StaffInstallments.jsx";
+import StaffAgreementCreate from "./pages/StaffAgreementCreate.jsx";
+import StaffAgreementTemplates from "./pages/StaffAgreementTemplates.jsx";
 
 const REAL_ESTATE_STAFF_ROLES = [
   "admin",
@@ -42,6 +51,10 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/properties" element={<Properties />} />
           <Route path="/properties/:id" element={<PropertyDetails />} />
+          <Route
+            path="/property-viewing/payment/callback"
+            element={<PropertyViewingPaymentCallback />}
+          />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -54,6 +67,40 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/account/kyc"
+            element={
+              <ProtectedRoute roles={["customer"]}>
+                <CustomerKyc />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/account/agreements"
+            element={
+              <ProtectedRoute roles={["customer"]}>
+                <CustomerAgreements />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/account/agreements/:id"
+            element={
+              <ProtectedRoute roles={["customer"]}>
+                <CustomerAgreementDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/account/installments"
+            element={
+              <ProtectedRoute roles={["customer"]}>
+                <CustomerInstallments />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/my-requests"
             element={
@@ -86,6 +133,23 @@ function App() {
               element={
                 <StaffRoute roles={["admin", "manager"]}>
                   <StaffProperties />
+                </StaffRoute>
+              }
+            />
+            <Route
+              path="finance"
+              element={
+                <StaffRoute roles={["admin", "manager", "finance"]}>
+                  <StaffPaymentQueue />
+                </StaffRoute>
+              }
+            />
+
+            <Route
+              path="installments"
+              element={
+                <StaffRoute roles={["admin", "manager", "finance"]}>
+                  <StaffInstallments />
                 </StaffRoute>
               }
             />
@@ -190,6 +254,22 @@ function App() {
                   ]}
                 >
                   <StaffPropertyViewings />
+                </StaffRoute>
+              }
+            />
+            <Route
+              path="agreements/new"
+              element={
+                <StaffRoute roles={["admin", "manager", "sales", "rental"]}>
+                  <StaffAgreementCreate />
+                </StaffRoute>
+              }
+            />
+            <Route
+              path="agreements/templates"
+              element={
+                <StaffRoute roles={["admin", "manager"]}>
+                  <StaffAgreementTemplates />
                 </StaffRoute>
               }
             />
