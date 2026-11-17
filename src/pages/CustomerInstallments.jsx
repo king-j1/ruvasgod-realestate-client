@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/axios";
@@ -85,6 +84,7 @@ function CustomerInstallments() {
 
   const [selectedInstallment, setSelectedInstallment] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentMode, setPaymentMode] = useState("THIS_INSTALLMENT");
   const [paymentMethod, setPaymentMethod] = useState("BANK_TRANSFER");
   const [paymentReference, setPaymentReference] = useState("");
   const [receiptFile, setReceiptFile] = useState(null);
@@ -128,7 +128,7 @@ function CustomerInstallments() {
 
           try {
             const response = await api.get(
-              `/paims/agreements/${agreementId}/payment-plan`
+              `/paims/agreements/${agreementId}/payment-plan`,
             );
 
             return {
@@ -142,7 +142,7 @@ function CustomerInstallments() {
 
             throw planError;
           }
-        })
+        }),
       );
 
       setPlans(planResults.filter(Boolean));
@@ -157,17 +157,51 @@ function CustomerInstallments() {
     loadDashboard();
   }, [loadDashboard]);
 
-  function openPaymentForm(installment, agreement) {
-    const outstanding =
-      Number(installment.amountDue || 0) -
-      Number(installment.amountPaid || 0);
+  function openPaymentForm(installment, agreement, allInstallments = []) {
+    const ordered = [...allInstallments].sort(
+      (a, b) => a.installmentNumber - b.installmentNumber,
+    );
+
+    const selectedIndex = ordered.findIndex(
+      (item) =>
+        String(item._id || item.id) ===
+        String(installment._id || installment.id),
+    );
+
+    const balanceOf = (item) =>
+      Math.max(
+        0,
+        Math.round(
+          (Number(item.amountDue || 0) - Number(item.amountPaid || 0)) * 100,
+        ),
+      );
+
+    const eligible = ordered.filter(
+      (item) =>
+        balanceOf(item) > 0 && !["WAIVED", "CANCELLED"].includes(item.status),
+    );
+
+    const availableFromSelected = ordered
+      .slice(Math.max(0, selectedIndex))
+      .reduce((sum, item) => sum + balanceOf(item), 0);
+
+    const totalOutstanding = eligible.reduce(
+      (sum, item) => sum + balanceOf(item),
+      0,
+    );
+
+    const outstanding = balanceOf(installment) / 100;
 
     setSelectedInstallment({
       installment,
       agreement,
+      installments: ordered,
       outstanding,
+      availableFromSelected: availableFromSelected / 100,
+      totalOutstanding: totalOutstanding / 100,
     });
 
+    setPaymentMode("THIS_INSTALLMENT");
     setPaymentAmount(outstanding.toFixed(2));
     setPaymentMethod("BANK_TRANSFER");
     setPaymentReference("");
@@ -184,6 +218,7 @@ function CustomerInstallments() {
     setReceiptFile(null);
     setReceiptUploadPaymentId(null);
     setError("");
+    setPaymentMode("THIS_INSTALLMENT");
   }
 
   function validateReceipt(file) {
@@ -206,10 +241,7 @@ function CustomerInstallments() {
     const formData = new FormData();
     formData.append("receipt", file);
 
-    await api.post(
-      `/paims/payments/${paymentId}/receipt`,
-      formData
-    );
+    await api.post(`/paims/payments/${paymentId}/receipt`, formData);
   }
 
   async function handlePaymentSubmit(event) {
@@ -232,51 +264,119 @@ function CustomerInstallments() {
     try {
       let paymentId = receiptUploadPaymentId;
 
-      // Create the payment only once.
-      // If receipt upload previously failed, reuse the saved payment ID.
       if (!paymentId) {
         const amount = Number(paymentAmount);
-
         const {
           installment,
           agreement,
+          installments,
           outstanding,
+          availableFromSelected,
+          totalOutstanding,
         } = selectedInstallment;
 
         const agreementId = agreement._id || agreement.id;
-        const installmentId = installment._id || installment.id;
 
         if (!Number.isFinite(amount) || amount <= 0) {
           setError("Enter a valid payment amount.");
           return;
         }
 
-        if (amount > outstanding) {
-          setError(
-            "The payment cannot exceed the outstanding installment balance."
+        const amountPesewas = Math.round(amount * 100);
+
+        const balancePesewas = (item) =>
+          Math.max(
+            0,
+            Math.round(
+              (Number(item.amountDue || 0) -
+                Number(item.amountPaid || 0)) * 100,
+            ),
           );
+
+        let maximumPesewas = Math.round(outstanding * 100);
+
+        if (paymentMode === "PAY_AHEAD") {
+          maximumPesewas = Math.round(availableFromSelected * 100);
+        }
+
+        if (paymentMode === "EARLY_SETTLEMENT") {
+          maximumPesewas = Math.round(totalOutstanding * 100);
+        }
+
+        if (amountPesewas > maximumPesewas) {
+          setError("The amount exceeds the outstanding balance available for this payment option.");
           return;
         }
 
         if (
-          paymentReference.trim() &&
-          paymentReference.trim().length < 3
+          paymentMode === "EARLY_SETTLEMENT" &&
+          amountPesewas !== maximumPesewas
         ) {
-          setError(
-            "Payment reference must contain at least 3 characters."
+          setError("Early settlement requires payment of the full remaining balance.");
+          return;
+        }
+
+        if (paymentReference.trim() && paymentReference.trim().length < 3) {
+          setError("Payment reference must contain at least 3 characters.");
+          return;
+        }
+
+        const selectedId = String(installment._id || installment.id);
+        const ordered = [...installments].sort(
+          (a, b) => a.installmentNumber - b.installmentNumber,
+        );
+
+        let eligible;
+
+        if (paymentMode === "THIS_INSTALLMENT") {
+          eligible = ordered.filter(
+            (item) => String(item._id || item.id) === selectedId,
           );
+        } else if (paymentMode === "PAY_AHEAD") {
+          const selectedIndex = ordered.findIndex(
+            (item) => String(item._id || item.id) === selectedId,
+          );
+          eligible = ordered.slice(Math.max(0, selectedIndex));
+        } else {
+          eligible = ordered;
+        }
+
+        eligible = eligible.filter(
+          (item) =>
+            balancePesewas(item) > 0 &&
+            !["WAIVED", "CANCELLED"].includes(item.status),
+        );
+
+        let remainingPesewas = amountPesewas;
+        const allocations = [];
+
+        for (const item of eligible) {
+          if (remainingPesewas <= 0) break;
+
+          const allocationPesewas = Math.min(
+            balancePesewas(item),
+            remainingPesewas,
+          );
+
+          if (allocationPesewas > 0) {
+            allocations.push({
+              installment: item._id || item.id,
+              amount: allocationPesewas / 100,
+            });
+
+            remainingPesewas -= allocationPesewas;
+          }
+        }
+
+        if (remainingPesewas > 0 || allocations.length === 0) {
+          setError("The payment could not be allocated to the selected installments. Please refresh and try again.");
           return;
         }
 
         const paymentResponse = await api.post("/paims/payments", {
           agreement: agreementId,
-          allocations: [
-            {
-              installment: installmentId,
-              amount,
-            },
-          ],
-          amount,
+          allocations,
+          amount: amountPesewas / 100,
           paymentMethod,
           ...(paymentReference.trim()
             ? { paymentReference: paymentReference.trim() }
@@ -292,20 +392,19 @@ function CustomerInstallments() {
 
         if (!paymentId) {
           throw new Error(
-            "The payment may have been created, but the server did not return its ID. Please contact support before trying again."
+            "The payment may have been created, but the server did not return its ID. Please contact support before trying again.",
           );
         }
 
         setReceiptUploadPaymentId(paymentId);
       }
 
-      // Upload the receipt against the payment record.
       await uploadPaymentReceipt(paymentId, receiptFile);
 
       closePaymentForm();
 
       setNotice(
-        "Your payment and receipt have been submitted successfully. The finance team will verify them before confirming your payment."
+        "Your payment and receipt have been submitted successfully. The finance team will verify them before confirming your payment.",
       );
 
       await loadDashboard();
@@ -321,9 +420,7 @@ function CustomerInstallments() {
     setError("");
 
     try {
-      const response = await api.get(
-        `/paims/payments/${paymentId}/receipt`
-      );
+      const response = await api.get(`/paims/payments/${paymentId}/receipt`);
 
       const secureUrl = response.data?.access?.url;
 
@@ -341,15 +438,13 @@ function CustomerInstallments() {
   }
 
   const totalOutstanding = plans.reduce(
-    (sum, item) =>
-      sum + Number(item.financialSummary?.outstandingBalance || 0),
-    0
+    (sum, item) => sum + Number(item.financialSummary?.outstandingBalance || 0),
+    0,
   );
 
   const totalPaid = plans.reduce(
-    (sum, item) =>
-      sum + Number(item.financialSummary?.totalPaid || 0),
-    0
+    (sum, item) => sum + Number(item.financialSummary?.totalPaid || 0),
+    0,
   );
 
   if (loading) {
@@ -435,9 +530,9 @@ function CustomerInstallments() {
             </h2>
 
             <p className="mt-3 text-sm leading-6 text-stone-600">
-              There are no payment plans linked to your agreements yet.
-              Please contact the property team if you believe a payment plan
-              should be available.
+              There are no payment plans linked to your agreements yet. Please
+              contact the property team if you believe a payment plan should be
+              available.
             </p>
 
             <Link
@@ -502,18 +597,16 @@ function CustomerInstallments() {
                       <p className="mt-1 font-semibold text-amber-800">
                         {formatMoney(
                           financialSummary?.outstandingBalance,
-                          currency
+                          currency,
                         )}
                       </p>
                     </div>
 
                     <div>
-                      <p className="text-xs text-stone-500">
-                        Payment progress
-                      </p>
+                      <p className="text-xs text-stone-500">Payment progress</p>
                       <p className="mt-1 font-semibold text-stone-900">
                         {Number(
-                          financialSummary?.paymentPercentage || 0
+                          financialSummary?.paymentPercentage || 0,
                         ).toFixed(1)}
                         %
                       </p>
@@ -528,10 +621,8 @@ function CustomerInstallments() {
                           100,
                           Math.max(
                             0,
-                            Number(
-                              financialSummary?.paymentPercentage || 0
-                            )
-                          )
+                            Number(financialSummary?.paymentPercentage || 0),
+                          ),
                         )}%`,
                       }}
                     />
@@ -540,10 +631,7 @@ function CustomerInstallments() {
                   {Number(financialSummary?.overdueCount || 0) > 0 && (
                     <p className="mt-4 text-sm font-semibold text-red-700">
                       {financialSummary.overdueCount} overdue installment(s):{" "}
-                      {formatMoney(
-                        financialSummary.overdueAmount,
-                        currency
-                      )}
+                      {formatMoney(financialSummary.overdueAmount, currency)}
                     </p>
                   )}
                 </div>
@@ -580,13 +668,13 @@ function CustomerInstallments() {
                             const balance = Math.max(
                               0,
                               Number(installment.amountDue || 0) -
-                                Number(installment.amountPaid || 0)
+                                Number(installment.amountPaid || 0),
                             );
 
                             const canPay =
                               balance > 0 &&
                               !["WAIVED", "CANCELLED"].includes(
-                                installment.status
+                                installment.status,
                               ) &&
                               agreement.status === "ACTIVE" &&
                               plan?.status === "ACTIVE";
@@ -605,16 +693,13 @@ function CustomerInstallments() {
                                 </td>
 
                                 <td className="px-3 py-4 text-stone-700">
-                                  {formatMoney(
-                                    installment.amountDue,
-                                    currency
-                                  )}
+                                  {formatMoney(installment.amountDue, currency)}
                                 </td>
 
                                 <td className="px-3 py-4 text-green-700">
                                   {formatMoney(
                                     installment.amountPaid,
-                                    currency
+                                    currency,
                                   )}
                                 </td>
 
@@ -631,7 +716,7 @@ function CustomerInstallments() {
                                     <button
                                       type="button"
                                       onClick={() =>
-                                        openPaymentForm(installment, agreement)
+                                       openPaymentForm(installment, agreement, installments)
                                       }
                                       className="whitespace-nowrap rounded-lg bg-amber-700 px-3 py-2 text-xs font-bold text-white hover:bg-amber-800"
                                     >
@@ -688,7 +773,7 @@ function CustomerInstallments() {
                   {payments.map((payment) => {
                     const paymentId = payment._id || payment.id;
                     const hasReceipt = Boolean(
-                      payment.receiptMimeType || payment.receiptFileSize
+                      payment.receiptMimeType || payment.receiptFileSize,
                     );
 
                     return (
@@ -715,7 +800,7 @@ function CustomerInstallments() {
                         <td className="px-3 py-4 font-semibold text-stone-900">
                           {formatMoney(
                             payment.amount,
-                            payment.currency || "GHS"
+                            payment.currency || "GHS",
                           )}
                         </td>
 
@@ -792,20 +877,55 @@ function CustomerInstallments() {
                 <p className="mt-1 text-2xl font-bold text-amber-950">
                   {formatMoney(
                     selectedInstallment.outstanding,
-                    selectedInstallment.agreement.currency || "GHS"
+                    selectedInstallment.agreement.currency || "GHS",
                   )}
                 </p>
               </div>
 
               {receiptUploadPaymentId && (
                 <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                  Your payment has been created. The receipt upload needs to
-                  be completed. Select the receipt again and retry below.
-                  Do not create another payment.
+                  Your payment has been created. The receipt upload needs to be
+                  completed. Select the receipt again and retry below. Do not
+                  create another payment.
                 </div>
               )}
 
               <form onSubmit={handlePaymentSubmit} className="mt-6 space-y-4">
+                <div>
+                  <label
+                    htmlFor="paymentMode"
+                    className="mb-2 block text-sm font-semibold text-stone-700"
+                  >
+                    Payment option
+                  </label>
+
+                  <select
+                    id="paymentMode"
+                    value={paymentMode}
+                    disabled={Boolean(receiptUploadPaymentId)}
+                    onChange={(event) => {
+                      const mode = event.target.value;
+                      setPaymentMode(mode);
+
+                      if (mode === "THIS_INSTALLMENT") {
+                        setPaymentAmount(selectedInstallment.outstanding.toFixed(2));
+                      } else if (mode === "PAY_AHEAD") {
+                        setPaymentAmount(selectedInstallment.availableFromSelected.toFixed(2));
+                      } else {
+                        setPaymentAmount(selectedInstallment.totalOutstanding.toFixed(2));
+                      }
+                    }}
+                    className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-stone-900 outline-none focus:border-amber-700 disabled:bg-stone-100"
+                  >
+                    <option value="THIS_INSTALLMENT">This installment only</option>
+                    <option value="PAY_AHEAD">Pay ahead (this and future installments)</option>
+                    <option value="EARLY_SETTLEMENT">Early settlement (all remaining balance)</option>
+                  </select>
+                  <p className="mt-2 text-xs leading-5 text-stone-500">
+                    Pay-ahead amounts are allocated in installment order. Early settlement requires the full remaining balance.
+                  </p>
+                </div>
+
                 <div>
                   <label
                     htmlFor="paymentAmount"
@@ -818,10 +938,19 @@ function CustomerInstallments() {
                     id="paymentAmount"
                     type="number"
                     min="0.01"
-                    max={selectedInstallment.outstanding}
+                    max={
+                      paymentMode === "THIS_INSTALLMENT"
+                        ? selectedInstallment.outstanding
+                        : paymentMode === "PAY_AHEAD"
+                          ? selectedInstallment.availableFromSelected
+                          : selectedInstallment.totalOutstanding
+                    }
                     step="0.01"
                     required
-                    disabled={Boolean(receiptUploadPaymentId)}
+                    disabled={
+                      Boolean(receiptUploadPaymentId) ||
+                      paymentMode === "EARLY_SETTLEMENT"
+                    }
                     value={paymentAmount}
                     onChange={(event) => setPaymentAmount(event.target.value)}
                     className="w-full rounded-xl border border-stone-300 px-4 py-3 text-stone-900 outline-none focus:border-amber-700 focus:ring-2 focus:ring-amber-100 disabled:bg-stone-100"
@@ -879,8 +1008,7 @@ function CustomerInstallments() {
                     htmlFor="paymentReceipt"
                     className="mb-2 block text-sm font-semibold text-stone-700"
                   >
-                    Payment receipt{" "}
-                    <span className="text-red-600">*</span>
+                    Payment receipt <span className="text-red-600">*</span>
                   </label>
 
                   <input
@@ -896,9 +1024,9 @@ function CustomerInstallments() {
                   />
 
                   <p className="mt-2 text-xs leading-5 text-stone-500">
-                    Upload your bank transfer slip, mobile money confirmation
-                    or other payment evidence. JPG, PNG, WEBP or PDF.
-                    Maximum 10 MB.
+                    Upload your bank transfer slip, mobile money confirmation or
+                    other payment evidence. JPG, PNG, WEBP or PDF. Maximum 10
+                    MB.
                   </p>
 
                   {receiptFile && (

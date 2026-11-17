@@ -34,6 +34,8 @@ import StaffPaymentQueue from "./pages/StaffPaymentQueue.jsx";
 import StaffInstallments from "./pages/StaffInstallments.jsx";
 import StaffAgreementCreate from "./pages/StaffAgreementCreate.jsx";
 import StaffAgreementTemplates from "./pages/StaffAgreementTemplates.jsx";
+import StaffAgreements from "./pages/StaffAgreements.jsx";
+import StaffPaymentPolicies from "./pages/StaffPaymentPolicies.jsx";
 
 const REAL_ESTATE_STAFF_ROLES = [
   "admin",
@@ -126,6 +128,22 @@ function App() {
               </StaffRoute>
             }
           >
+            <Route
+              path="payment-policies"
+              element={
+                <StaffRoute roles={["admin", "manager"]}>
+                  <StaffPaymentPolicies />
+                </StaffRoute>
+              }
+            />
+            <Route
+              path="agreements"
+              element={
+                <StaffRoute roles={["admin", "manager"]}>
+                  <StaffAgreements />
+                </StaffRoute>
+              }
+            />
             <Route index element={<StaffDashboard />} />
             <Route path="dashboard" element={<StaffDashboard />} />
             <Route

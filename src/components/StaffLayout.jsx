@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
@@ -57,6 +56,18 @@ function StaffLayout() {
         {
           to: "/staff/agreements/templates",
           label: "Agreement Templates",
+          icon: FiFileText,
+          roles: ["admin", "manager"],
+        },
+        {
+          to: "/staff/agreements",
+          label: "Agreement management",
+          icon: FiFileText,
+          roles: ["admin", "manager"],
+        },
+        {
+          to: "/staff/payment-policies",
+          label: "Payment policies",
           icon: FiFileText,
           roles: ["admin", "manager"],
         },
@@ -224,7 +235,7 @@ function StaffLayout() {
         </div>
       </header>
 
-      <aside className="fixed bottom-0 start-0 top-16 z-20 hidden w-64 border-e border-stone-200 bg-white p-4 lg:block">
+     <aside className="fixed bottom-0 start-0 top-16 z-20 hidden w-64 overflow-y-auto overscroll-contain border-e border-stone-200 bg-white p-4 lg:block">
         {renderNavigation()}
 
         <Link
